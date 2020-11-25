@@ -7,4 +7,4 @@ Machine Learning (CS-433) : Project 2
 - André Langmeier (<andre.langmeier@epfl.ch>)
 
 ## Folders (to be updated)
-- description : *contains all the pdf's needed for documentation of presentation of the project*.
+- description : *contains all the pdf's needed for documentation or presentation of the project*.
