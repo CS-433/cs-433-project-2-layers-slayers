@@ -39,30 +39,59 @@ def load_image(infilename:str):
 #     data = mpimg.imread(image_dir + image_filename)
 #     return data
 
-def load_nimages(n):
+def load_nimages(n, train=True):
     """ Loads n (int) images in an arbitrary order and returns a list of these 
-        and another of their corresponding groundtruths.
+        and another of their corresponding groundtruths if the argument train 
+        is set to True (default). Otherwise, it returns one list of test images.
         __________
-        Parameters : n (int)
-        Returns : imgs (list), groundtruths (list) """
+        Parameters : n (int), train=True (boolean)
+        Returns : imgs (list), groundtruths (list) (if train=True) """
         
-    root_dir = "data/training/"
-    image_dir = root_dir + "images/"
-    gt_dir = root_dir + "groundtruth/"
+    if train:
+        root_dir = "data/training/"
+        image_dir = root_dir + "images/"
+        gt_dir = root_dir + "groundtruth/"
     
-    files = sorted(os.listdir(image_dir))
-    n = min(n, len(files)) # Load maximum n images
-    np.random.seed(1) # Seeding so everyone gets the same samples
-    random_indices = np.random.randint(0,len(files),size=n)
+        files = np.array(sorted(os.listdir(image_dir)))
+        np.random.seed(1) # Seeding so everyone gets the same samples
+        random_indices = np.random.permutation(len(files))
+        files = files[random_indices]
+        n = min(n, len(files)) # Load maximum n images
+        
+        print("Loading " + str(n) + " images")
+        imgs = [load_image(image_dir + files[i]) for i in range(n)]
+        
+        print("Loading " + str(n) + " corresponding groundtruths")
+        gt_imgs = [load_image(gt_dir + files[i]) for i in range(n)]
     
-    print("Loading " + str(n) + " images")
-    imgs = [load_image(image_dir + files[i]) for i in random_indices]
+        return imgs, gt_imgs
     
-    print("Loading " + str(n) + " corresponding groundtruths")
-    gt_imgs = [load_image(gt_dir + files[i]) for i in random_indices]
+    else:
+        root_dir = "data/test_set_images/"
+        
+        files = np.array(sorted(os.listdir(root_dir)))
+        np.random.seed(1) # Seeding so everyone gets the same samples
+        random_indices = np.random.permutation(len(files))
+        files = files[random_indices]
+        n = min(n, len(files))
+        
+        print("Loading " + str(n) + " images")
+        imgs = [load_image(root_dir + files[i] + "/" + f"{files[i]}.png") 
+                for i in range(n)]
+        
+        return imgs
 
-    return imgs, gt_imgs
 
+# ____________________________ Saving images ____________________________
+
+def save_img(img, image_name, path='./'):
+    """ Saves the image passed as argument with the specified image_name at the 
+        specified path (default: current folder) with 'png' format.
+        __________
+        Parameters : image (array), image_name (str), path='.' (str)
+        Returns : None """
+        
+    plt.imsave(path + image_name + ".png", img)
 
 # ____________________________ Extracting patches ____________________________
 

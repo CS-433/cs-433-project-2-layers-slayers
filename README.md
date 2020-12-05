@@ -1,5 +1,6 @@
 # Road Segmentation
-Machine Learning (CS-433) : Project 2
+Machine Learning (CS-433) : Project 2.
+
 Data, Leaderboard available on : <https://www.aicrowd.com/challenges/epfl-ml-road-segmentation>
 
 ## Authors
