@@ -1,4 +1,4 @@
-# Microearthquakes detection, phase picking, and location
+# Road Segmentation
 Machine Learning (CS-433) : Project 2
 
 ## Authors
@@ -7,4 +7,4 @@ Machine Learning (CS-433) : Project 2
 - André Langmeier (<andre.langmeier@epfl.ch>)
 
 ## Folders (to be updated)
-- description : *contains all the pdf's needed for documentation of presentation of the project*.
+- data : *contains all the data used to train and test the model*.
