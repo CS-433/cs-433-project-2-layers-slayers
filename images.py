@@ -12,6 +12,7 @@ well as arranging them for plotting.
 # ____________________________ IMPORTS ____________________________
 import matplotlib.image as mpimg
 import numpy as np
+import torch
 import matplotlib.pyplot as plt
 import os,sys
 from PIL import Image
@@ -23,10 +24,11 @@ def load_image(infilename:str):
     """ Loads the image specified by the filename (string) passed as argument.
         __________
         Parameters : filename (str)
-        Returns : image (array) """
+        Returns : image (torch tensor) 
+    """
     
     data = mpimg.imread(infilename)
-    return data
+    return torch.from_numpy(data)
 
 # def load_image(i:int):
 #     """ Loads image i (int) contained in the training dataset (from 1 to 100).
@@ -45,7 +47,8 @@ def load_nimages(n, train=True):
         is set to True (default). Otherwise, it returns one list of test images.
         __________
         Parameters : n (int), train=True (boolean)
-        Returns : imgs (list), groundtruths (list) (if train=True) """
+        Returns : imgs (list of torch tensors), groundtruths (list of torch tensors) (if train=True) 
+    """
         
     if train:
         root_dir = "data/training/"
@@ -88,10 +91,15 @@ def save_img(img, image_name, path='./'):
     """ Saves the image passed as argument with the specified image_name at the 
         specified path (default: current folder) with 'png' format.
         __________
-        Parameters : image (array), image_name (str), path='.' (str)
-        Returns : None """
+        Parameters : image (torch tensor or Image object), image_name (str), path='./' (str)
+        Returns : None 
+    """
+    
+    if type(img) == torch.Tensor:
+        plt.imsave(path + image_name + ".png", img.numpy())
         
-    plt.imsave(path + image_name + ".png", img)
+    elif type(img) == Image.Image:
+        img.save(path + image_name + ".png")
 
 # ____________________________ Extracting patches ____________________________
 
@@ -99,13 +107,14 @@ def crop_img(im, w=16, h=16):
     """ Extracts patches of the image passed as argument with the specified 
         width and length (default : 16x16).
         __________
-        Parameters : image (array), width=16 (int), height=16 (int)
-        Returns : patches of image (list) """
+        Parameters : image (torch tensor), width=16 (int), height=16 (int)
+        Returns : patches of image (list of torch tensors) 
+    """
     
     list_patches = []
-    imgwidth = im.shape[0]
-    imgheight = im.shape[1]
-    is_2d = len(im.shape) < 3
+    imgwidth = im.size()[0]
+    imgheight = im.size()[1]
+    is_2d = len(im.size()) < 3
     for i in range(0,imgheight,h):
         for j in range(0,imgwidth,w):
             if is_2d:
@@ -113,6 +122,7 @@ def crop_img(im, w=16, h=16):
             else:
                 im_patch = im[j:j+w, i:i+h, :]
             list_patches.append(im_patch)
+            
     return list_patches
 
 
@@ -121,33 +131,41 @@ def crop_img(im, w=16, h=16):
 def concatenate_images(img, gt_img):
     """ Concatenates an image and its groundtruth along the horizontal axis.
         __________
-        Parameters : image (array), groundtruth (array) 
-        Returns : concatenated image (array) """
+        Parameters : image (torch tensor), groundtruth (torch tensor) 
+        Returns : concatenated image (Image object) 
+    """
     
-    nChannels = len(gt_img.shape)
-    w = gt_img.shape[0]
-    h = gt_img.shape[1]
+    nChannels = len(gt_img.size())
+    w = gt_img.size()[0]
+    h = gt_img.size()[1]
     if nChannels == 3:
-        cimg = np.concatenate((img, gt_img), axis=1)
+        cimg = torch.cat((img, gt_img), 1)
     else:
-        gt_img_3c = np.zeros((w, h, 3), dtype=np.uint8)
+        gt_img_3c = torch.zeros((w, h, 3), dtype=torch.uint8)
         gt_img8 = img_float_to_uint8(gt_img)          
         gt_img_3c[:,:,0] = gt_img8
         gt_img_3c[:,:,1] = gt_img8
         gt_img_3c[:,:,2] = gt_img8
         img8 = img_float_to_uint8(img)
-        cimg = np.concatenate((img8, gt_img_3c), axis=1)
-    return cimg
+        cimg = torch.cat((img8, gt_img_3c), 1)
+    return Image.fromarray(cimg.numpy())
+
 
 def overlay_images(img, predicted_img):
-    w = img.shape[0]
-    h = img.shape[1]
-    color_mask = np.zeros((w, h, 3), dtype=np.uint8)
+    """ Overlays an image and its groundtruth so that the groundtruth image is 
+        a red slightly transparent mask.
+        __________
+        Parameters : image (torch tensor), groundtruth (torch_tensor)
+        Returns : overlayed image (Image object)
+    """
+    w = img.size()[0]
+    h = img.size()[1]
+    color_mask = torch.zeros((w, h, 3), dtype=torch.uint8)
     color_mask[:,:,0] = predicted_img*255
 
     img8 = img_float_to_uint8(img)
-    background = Image.fromarray(img8, 'RGB').convert("RGBA")
-    overlay = Image.fromarray(color_mask, 'RGB').convert("RGBA")
+    background = Image.fromarray(img8.numpy(), 'RGB').convert("RGBA")
+    overlay = Image.fromarray(color_mask.numpy(), 'RGB').convert("RGBA")
     new_img = Image.blend(background, overlay, 0.2)
     return new_img
 
@@ -157,11 +175,12 @@ def overlay_images(img, predicted_img):
 def img_float_to_uint8(img):
     """ Converts the image passed as argument from float to uint8.
         __________
-        Parameters : image (array of float)
-        Returns : image (array of uint8) """
+        Parameters : image (torch tensor of float)
+        Returns : image (torch tensor of uint8) """
     
-    rimg = img - np.min(img)
-    rimg = (rimg / np.max(rimg) * 255).round().astype(np.uint8)
+    rimg = img - torch.min(img)
+    rimg = (rimg / torch.max(rimg) * 255).round()
+    rimg = torch.tensor(rimg, dtype=torch.uint8)
     return rimg
 
 
