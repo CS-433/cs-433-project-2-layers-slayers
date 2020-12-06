@@ -179,8 +179,8 @@ def img_float_to_uint8(img):
         Returns : image (torch tensor of uint8) """
     
     rimg = img - torch.min(img)
-    rimg = (rimg / torch.max(rimg) * 255).round()
-    rimg = torch.tensor(rimg, dtype=torch.uint8)
+    rimg = (rimg / torch.max(rimg) * 255).round().type(torch.ByteTensor)
+    
     return rimg
 
 
