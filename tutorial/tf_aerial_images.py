@@ -25,11 +25,11 @@ import tensorflow as tf
 NUM_CHANNELS = 3  # RGB images
 PIXEL_DEPTH = 255
 NUM_LABELS = 2
-TRAINING_SIZE = 20
+TRAINING_SIZE = 10
 VALIDATION_SIZE = 5  # Size of the validation set.
 SEED = 66478  # Set to None for random seed.
 BATCH_SIZE = 16  # 64
-NUM_EPOCHS = 100
+NUM_EPOCHS = 5
 RESTORE_MODEL = False  # If True, restore existing model instead of training a new one
 RECORDING_STEP = 0
 

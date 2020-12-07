@@ -39,7 +39,7 @@ def load_image(infilename:str):
 #     data = mpimg.imread(image_dir + image_filename)
 #     return data
 
-def load_nimages(n, train=True):
+def load_nimages(n, train=True, seed=1):
     """ Loads n (int) images in an arbitrary order and returns a list of these 
         and another of their corresponding groundtruths if the argument train 
         is set to True (default). Otherwise, it returns one list of test images.
@@ -53,7 +53,7 @@ def load_nimages(n, train=True):
         gt_dir = root_dir + "groundtruth/"
     
         files = np.array(sorted(os.listdir(image_dir)))
-        np.random.seed(1) # Seeding so everyone gets the same samples
+        np.random.seed(seed) # Seeding so everyone gets the same samples
         random_indices = np.random.permutation(len(files))
         files = files[random_indices]
         n = min(n, len(files)) # Load maximum n images
