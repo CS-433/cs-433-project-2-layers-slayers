@@ -13,6 +13,7 @@ well as arranging them for plotting.
 import matplotlib.image as mpimg
 import numpy as np
 import torch
+import torchvision.transforms as transforms
 import matplotlib.pyplot as plt
 import os,sys
 from PIL import Image
@@ -170,7 +171,7 @@ def overlay_images(img, predicted_img):
     return new_img
 
 
-# ____________________________ Helper functions ____________________________
+# ____________________________ Conversion functions ____________________________
 
 def img_float_to_uint8(img):
     """ Converts the image passed as argument from float to uint8.
@@ -182,5 +183,35 @@ def img_float_to_uint8(img):
     rimg = (rimg / torch.max(rimg) * 255).round().type(torch.ByteTensor)
     
     return rimg
+
+def convert_to_tensor(img):
+    """ Converts the image passed as argument from PIL Image to Pytorch tensor.
+        __________
+        Parameters : image (PIL Image)
+        Returns : image (torch tensor)
+    """
+    
+    if type(img) == Image.Image:
+        converter = transforms.ToTensor()
+        return converter(img).permute(1,2,0)
+    elif type(img) == torch.Tensor:
+        return img
+    else:
+        raise TypeError("Cannot convert this type to Pytorch tensor.")
+        
+def convert_to_Image(img):
+    """ Converts the image passed as argument from Pytorch tensor to PIL Image.
+        __________
+        Parameters : image (torch tensor)
+        Returns : image (PIL Image)
+    """
+    
+    if type(img) == torch.Tensor:
+        converter = transforms.ToPILImage()
+        return converter(img.permute(2,0,1))
+    elif type(img) == Image.Image:
+        return img
+    else:
+        raise TypeError("Cannot convert this type to PIL Image.")
 
 
