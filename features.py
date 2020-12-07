@@ -64,6 +64,7 @@ def contrast_img(img,factor=2.5):
         
     enhancer = ImageEnhance.Contrast(img)
     rimg = enhancer.enhance(factor)
+    rimg = images.convert_to_tensor(rimg)
     return rimg
     
     
