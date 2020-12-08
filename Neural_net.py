@@ -14,6 +14,7 @@ import matplotlib.pyplot as plt
 
 import images
 
+#-----------------------------------------------------------------------------
 
 def value_to_class(v):
     foreground_threshold = 0.25  # percentage of pixels > 1 required to assign a foreground label to a patch
@@ -59,11 +60,32 @@ def accuracy(predicted_logits, reference):
     correct_predictions = labels.eq(reference)
     return correct_predictions.sum().float() / correct_predictions.nelement()
 
+#-----------------------------------------------------------------------------
+
+def split_data(data, labels, ratio, seed=1):
+    """split the dataset based on the split ratio."""
+    
+    np.random.seed(seed)
+    
+    N = data.shape[0]
+    shuffle = np.random.permutation(np.arange(N))
+    shuffled_data = data[shuffle]
+    shuffled_labels = labels[shuffle]
+    
+    stop = round(ratio*N)
+    
+    data_training = shuffled_data[0:stop]
+    labels_training = shuffled_labels[0:stop]
+    data_testing = shuffled_data[stop:N]
+    labels_testing = shuffled_labels[stop:N]
+
+    return data_training, labels_training, data_testing, labels_testing
+
 
 #-----------------------------------------------------------------------------
 
-def train(model, criterion, set_train, set_gt, optimizer, num_epochs,
-          batch_size=16):
+def train(model, criterion, train_set, train_gts, test_set, test_gts,
+          optimizer, scheduler, num_epochs, batch_size=16):
     """
     @param model: torch.nn.Module
     @param criterion: torch.nn.modules.loss._Loss
@@ -75,39 +97,73 @@ def train(model, criterion, set_train, set_gt, optimizer, num_epochs,
     @param num_epochs: int
     """
     
+    N_batch = int(train_set.shape[0]/batch_size)
+    N_batch_test = int(test_set.shape[0]/batch_size)
+    
+    train_size = train_set.shape[0]
+    training_indices = range(train_size)
+    test_size = test_set.shape[0]
+    testing_indices = range(test_size)
+     
     print("Starting training")
     
     for epoch in range(num_epochs):
         # Train an epoch
         model.train()
-        N_batch = int(set_train.shape[0]/batch_size)
         accuracies_train = []
+        accuracies_test = []
+        
+        # Permute training indices
+        perm_indices = np.random.permutation(training_indices)
         
         for i in range(N_batch):
             
-            batch_x = set_train[i*batch_size:(i+1)*batch_size]
-            batch_y = set_gt[i*batch_size:(i+1)*batch_size]
+            batch_indices = perm_indices[i*batch_size:(i+1)*batch_size]
+            
+            batch_x = train_set[batch_indices]
+            batch_y = train_gts[batch_indices]
+            
+            # clear the gradients
+            optimizer.zero_grad()
 
             # Evaluate the network (forward pass)
-            prediction = model.forward(batch_x)
+            prediction = model(batch_x)
             loss = criterion(prediction, batch_y)
             accuracies_train.append(accuracy(prediction, batch_y))
         
             # Compute the gradient
-            optimizer.zero_grad()  
             loss.backward()
         
             # Update the parameters of the model with a gradient step
             optimizer.step()
             
-        print("Epoch {} | Training accuracy: {:.5f}".format(epoch, 
-                        sum(accuracies_train).item()/len(accuracies_train)))
+        # Make a scheduler step
+        #scheduler.step()
+            
+        # Test the quality on the test set
+        model.eval()
+        
+        perm_indices_test = np.random.permutation(testing_indices)
+        
+        for i in range(N_batch_test):
+            
+            batch_indices_test = perm_indices_test[i*batch_size:(i+1)*batch_size]
+            
+            batch_x = test_set[batch_indices_test]
+            batch_y = test_gts[batch_indices_test]
+
+            # Evaluate the network (forward pass)
+            prediction = model(batch_x)
+            accuracies_test.append(accuracy(prediction, batch_y))
+            
+        
+        train_accuracy = sum(accuracies_train).item()/len(accuracies_train) 
+        test_accuracy = sum(accuracies_test).item()/len(accuracies_test)
+        print("Epoch {} | Train accuracy: {:.5f} and test accuracy: {:.5f}" \
+              .format(epoch+1, train_accuracy, test_accuracy))
         
         
     print ("Training completed")
-    
-
-
 
 #-----------------------------------------------------------------------------
 
@@ -116,11 +172,11 @@ class NeuralNet(torch.nn.Module):
     def __init__(self):
       
         super().__init__()
-        self.conv1 = torch.nn.Conv2d(3, 10, kernel_size=5)
-        self.conv2 = torch.nn.Conv2d(10, 20, kernel_size=5)
+        self.conv1 = torch.nn.Conv2d(3, 32, kernel_size=3)
+        self.conv2 = torch.nn.Conv2d(32, 64, kernel_size=3)
         self.conv2_drop = torch.nn.Dropout2d(p=0.5)
-        self.fc1 = torch.nn.Linear(20, 10)
-        self.fc2 = torch.nn.Linear(10, 2)
+        self.fc1 = torch.nn.Linear(256, 128)
+        self.fc2 = torch.nn.Linear(128, 2)
 
     def forward(self, x):
         relu = torch.nn.functional.relu
@@ -129,31 +185,79 @@ class NeuralNet(torch.nn.Module):
         #print(x.shape)
         x = relu(max_pool2d(self.conv2_drop(self.conv2(x)), 2))
         #print(x.shape)
-        x = x.view(16, 20)
+        x = x.view(-1, 256)
         x = relu(self.fc1(x))
         x = torch.nn.functional.dropout(x, training=self.training)
         x = self.fc2(x)
         return x    
 
 #-----------------------------------------------------------------------------
+    
+#%%
+size_train_set = 50
 
-size_train_set = 20
+data, labels = load_data(size_train_set, w=16, h=16, seed=1)
 
-imgs, gts = load_data(size_train_set, w=16, h=16)
+div = int(data.shape[0]/2)
 
-t = imgs.shape
+train_imgs, train_gts, test_imgs, test_gts = split_data(data, labels, 0.7)
 
-imgs = imgs.reshape((t[0], t[3], t[1], t[2]))
+"""
+c0 = 0  # bgrd
+c1 = 0  # road
+for i in range(len(train_gts)):
+    if train_gts[i] == 0:
+        c0 = c0 + 1
+    else:
+        c1 = c1 + 1
+print('Number of data points per class: c0 = ' + str(c0) + ' c1 = ' + str(c1))
 
+print('Balancing training data...')
+min_c = min(c0, c1)
+idx0 = [i for i, j in enumerate(train_gts) if j == 0]
+idx1 = [i for i, j in enumerate(train_gts) if j == 1]
+new_indices = idx0[0:min_c] + idx1[0:min_c]
+print("Training on {a} batches instead of {b}".format(a=len(new_indices),
+                                                     b=train_imgs.shape[0]))
+train_imgs = train_imgs[new_indices, :, :, :]
+train_gts = train_gts[new_indices]
+
+train_size = train_gts.shape[0]
+
+c0 = 0
+c1 = 0
+for i in range(len(train_gts)):
+    if train_gts[i] == 0:
+        c0 = c0 + 1
+    else:
+        c1 = c1 + 1
+print('Number of data points per class: c0 = ' + str(c0) + ' c1 = ' + str(c1))
+
+"""
+
+
+t = train_imgs.shape
+s = test_imgs.shape
+
+train_imgs = train_imgs.reshape((t[0], t[3], t[1], t[2]))
+test_imgs = test_imgs.reshape((s[0], s[3], s[1], s[2]))
+
+
+
+#%%
 model = NeuralNet()
 
-num_epochs = 10
-learning_rate = 1e-3
+num_epochs = 30
+learning_rate = 0.001
 
-criterion = torch.nn.CrossEntropyLoss() # this includes LogSoftmax which executes a logistic transformation
+criterion = torch.nn.CrossEntropyLoss()
+optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate,
+                             weight_decay=5e-4)
+scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.95)
+train(model, criterion, train_imgs, train_gts, test_imgs, test_gts,
+      optimizer, scheduler, num_epochs, 16)
 
-optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
-train(model, criterion, imgs, gts, optimizer, num_epochs)
+#%%
 
-
-
+train(model, criterion, train_imgs, train_gts, test_imgs, test_gts,
+      optimizer, scheduler, num_epochs)
