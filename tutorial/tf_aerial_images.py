@@ -207,7 +207,7 @@ def main(argv=None):  # pylint: disable=unused-argument
     train_labels = extract_labels(train_labels_filename, TRAINING_SIZE)
 
     num_epochs = NUM_EPOCHS
-
+    
     c0 = 0  # bgrd
     c1 = 0  # road
     for i in range(len(train_labels)):
