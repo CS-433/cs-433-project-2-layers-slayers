@@ -13,6 +13,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 import images
+import features
 
 #-----------------------------------------------------------------------------
 
@@ -81,6 +82,45 @@ def split_data(data, labels, ratio, seed=1):
     return data_training, labels_training, data_testing, labels_testing
 
 
+#-----------------------------------------------------------------------------
+
+def add_features (data, filters, contrast=True, factor=2.5):
+    """
+    Creates one more dimension on the data containing the images filtered
+    data : 4D tensor of the patches images
+    filters : list of strings containing the wanted filters
+    contrast : boolean (True for contrast filter, False otherwise)
+    factor : contrast factor (1 return original image)
+    """
+    
+    N = data.shape[0]
+    new_dim_len = len(filters) + 1   # +1 for original image
+    if (contrast):
+        new_dim_len += 1
+        
+    t = data.shape
+    new_data = torch.zeros((t[0], new_dim_len, t[1], t[2], t[3]))
+    
+    for i in range(N):
+        
+        imgs = [data[i]]
+        
+        for j in range(len(filters)):
+            
+            filtered_img = features.filter_img(data[i], filters[j])
+            imgs.append(filtered_img)
+        
+        if (contrast):
+            
+            contrasted_img = features.contrast_img(data[i], factor)
+            imgs.append(contrasted_img)
+            
+        imgs_tensor = torch.stack(imgs)
+        new_data[i] = imgs_tensor
+        
+    return new_data
+            
+    
 #-----------------------------------------------------------------------------
 
 def train(model, criterion, train_set, train_gts, test_set, test_gts,
@@ -171,21 +211,21 @@ class NeuralNet(torch.nn.Module):
     def __init__(self):
       
         super().__init__()
-        self.conv1 = torch.nn.Conv2d(3, 32, kernel_size=3, padding=1)
-        self.conv2 = torch.nn.Conv2d(32, 64, kernel_size=3, padding=1)
-        self.conv2_drop = torch.nn.Dropout2d(p=0.5)
-        self.fc1 = torch.nn.Linear(1024, 512)
-        self.fc2 = torch.nn.Linear(512, 2)
+        self.conv1 = torch.nn.Conv3d(3, 32, kernel_size=(1,3,3))
+        self.conv2 = torch.nn.Conv3d(32, 64, kernel_size=(1,3,3))
+        self.conv2_drop = torch.nn.Dropout3d(p=0.5)
+        self.fc1 = torch.nn.Linear(256, 128)
+        self.fc2 = torch.nn.Linear(128, 2)
 
     def forward(self, x):
         #print(x.shape)
         relu = torch.nn.functional.relu
-        max_pool2d = torch.nn.functional.max_pool2d
-        x = max_pool2d(relu(self.conv1(x)), 2)
+        max_pool3d = torch.nn.functional.max_pool3d
+        x = relu(max_pool3d(self.conv1(x), (1,2,2)))
         #print(x.shape)
-        x = max_pool2d(relu(self.conv2_drop(self.conv2(x))), 2)
+        x = relu(max_pool3d(self.conv2_drop(self.conv2(x)), (3,2,2)))
         #print(x.shape)
-        x = x.view(-1, 1024)
+        x = x.view(-1, 256)
         x = relu(self.fc1(x))
         x = torch.nn.functional.dropout(x, training=self.training)
         x = self.fc2(x)
@@ -198,10 +238,16 @@ size_train_set = 50
 
 data, labels = load_data(size_train_set, w=16, h=16, seed=1)
 
+print(data.shape)
 
-train_imgs, train_gts, test_imgs, test_gts = split_data(data, labels, 0.7)
+new_data = add_features(data, ['unsharp'], contrast=True, factor=2.5)
+
+print(new_data.shape)
+
+train_imgs, train_gts, test_imgs, test_gts = split_data(new_data, labels, 0.7)
 
 
+"""
 c0 = 0  # bgrd
 c1 = 0  # road
 for i in range(len(train_gts)):
@@ -231,14 +277,17 @@ for i in range(len(train_gts)):
     else:
         c1 = c1 + 1
 print('Number of data points per class: c0 = ' + str(c0) + ' c1 = ' + str(c1))
+"""
 
 
 
 t = train_imgs.shape
 s = test_imgs.shape
 
-train_imgs = train_imgs.reshape((t[0], t[3], t[1], t[2]))
-test_imgs = test_imgs.reshape((s[0], s[3], s[1], s[2]))
+train_imgs = train_imgs.reshape((t[0], t[4], t[1], t[2], t[3]))
+test_imgs = test_imgs.reshape((s[0], s[4], s[1], s[2], s[3]))
+
+print(train_imgs.shape)
 
 
 
@@ -259,3 +308,10 @@ train(model, criterion, train_imgs, train_gts, test_imgs, test_gts,
 
 train(model, criterion, train_imgs, train_gts, test_imgs, test_gts,
       optimizer, scheduler, num_epochs)
+
+
+
+
+
+
+
