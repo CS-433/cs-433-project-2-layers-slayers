@@ -18,6 +18,8 @@ import matplotlib.pyplot as plt
 import os,sys
 from PIL import Image
 
+import features
+
 
 # ____________________________ Loading images ____________________________
 
@@ -42,13 +44,17 @@ def load_image(infilename:str):
 #     data = mpimg.imread(image_dir + image_filename)
 #     return data
 
-def load_nimages(n, train=True, seed=1):
+def load_nimages(n, train=True, filters=None, seed=1):
     """ Loads n (int) images in an arbitrary order and returns a list of these 
         and another of their corresponding groundtruths if the argument train 
         is set to True (default). Otherwise, it returns one list of test images.
+        It is also possible to precise a list of filters with values specified 
+        inside method features.filter_img (default: None).
         __________
-        Parameters : n (int), train=True (boolean)
-        Returns : imgs (list of torch tensors), groundtruths (list of torch tensors) (if train=True) 
+        Parameters : n (int), train=True (boolean), filters=None (list of str)
+        Returns : images (list of torch tensors), 
+                  groundtruths (list of torch tensors) (if train=True),
+                  filtered images (list of torch tensors) (if filters!=None)
     """
         
     if train:
@@ -67,8 +73,13 @@ def load_nimages(n, train=True, seed=1):
         
         print("Loading " + str(n) + " corresponding groundtruths")
         gt_imgs = [load_image(gt_dir + files[i]) for i in range(n)]
-    
-        return imgs, gt_imgs
+        
+        if filters != None:
+            filtered_imgs = [[features.filter_img(imgs[i],filt) for i in range(n)] 
+                                                                for filt in filters]
+            return imgs, gt_imgs, *filtered_imgs
+        else:
+            return imgs, gt_imgs
     
     else:
         root_dir = "data/test_set_images/"
@@ -83,7 +94,12 @@ def load_nimages(n, train=True, seed=1):
         imgs = [load_image(root_dir + files[i] + "/" + f"{files[i]}.png") 
                 for i in range(n)]
         
-        return imgs
+        if filters != None:
+            filtered_imgs = [[features.filter_img(imgs[i],filt) for i in range(n)] 
+                                                                for filt in filters]
+            return imgs, *filtered_imgs
+        else:
+            return imgs
 
 
 # ____________________________ Saving images ____________________________
