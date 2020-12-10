@@ -18,8 +18,6 @@ import matplotlib.pyplot as plt
 import os,sys
 from PIL import Image
 
-import features
-
 
 # ____________________________ Loading images ____________________________
 
@@ -74,12 +72,8 @@ def load_nimages(n, train=True, filters=None, seed=1):
         print("Loading " + str(n) + " corresponding groundtruths")
         gt_imgs = [load_image(gt_dir + files[i]) for i in range(n)]
         
-        if filters != None:
-            filtered_imgs = [[features.filter_img(imgs[i],filt) for i in range(n)] 
-                                                                for filt in filters]
-            return imgs, gt_imgs, *filtered_imgs
-        else:
-            return imgs, gt_imgs
+    
+        return imgs, gt_imgs
     
     else:
         root_dir = "data/test_set_images/"
@@ -94,12 +88,7 @@ def load_nimages(n, train=True, filters=None, seed=1):
         imgs = [load_image(root_dir + files[i] + "/" + f"{files[i]}.png") 
                 for i in range(n)]
         
-        if filters != None:
-            filtered_imgs = [[features.filter_img(imgs[i],filt) for i in range(n)] 
-                                                                for filt in filters]
-            return imgs, *filtered_imgs
-        else:
-            return imgs
+        return imgs
 
 
 # ____________________________ Saving images ____________________________
