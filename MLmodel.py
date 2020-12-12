@@ -65,7 +65,7 @@ class Conv3DNet(torch.nn.Module): # ~83%
     def __init__(self):
         super().__init__()
         #EVENTUALLY PUT PIXELS AS PARAMETERS
-        self.filters = ['unsharp','contour','edge']
+        self.filters = ['edge','edge+']
         self.num_pixels = 16
         self.depth = 1+len(self.filters)
         self.image_volume = 3 * self.num_pixels * self.num_pixels * self.depth #colours x pixels 
@@ -196,7 +196,6 @@ def train(model, criterion, train_set, train_gts, test_set, test_gts,
             # clear the gradients
             optimizer.zero_grad()
 
-            print(batch_x.shape, batch_y.shape)
             # Evaluate the network (forward pass)
             prediction = model(batch_x)
             loss = criterion(prediction, batch_y)

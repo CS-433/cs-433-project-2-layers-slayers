@@ -82,7 +82,7 @@ class OutConv(nn.Module):
     def __init__(self, in_channels, out_channels):
         super().__init__()
         
-        self.conv = nn.Conv3d(in_channels, out_channels, kernel_size=1)
+        self.conv = nn.Conv3d(in_channels, out_channels, kernel_size=(3,1,1))
 
     def forward(self, x):
         return self.conv(x)
@@ -107,37 +107,38 @@ class UNet3D(nn.Module):
 
     def forward(self, x):
         device = x.device
-        print(f'first : {x.shape}')
         
         x = x.permute(0,2,3,1)
         x = features.add_features(x, self.filters, contrast=False)
-        x = torch.stack([x[:,1],x[:,0],x[:,2]])
-        x = x.permute(0,4,1,2,3)
+        x = x.permute(1,0,4,2,3)
+        x_ = x[0].clone()
+        x[0], x[1] = x[1], x_
+        x = x.permute(1,2,0,3,4)
         x = x.to(device)
         
-        print(x.shape)
+        # print(x.shape)
         x1 = self.ini(x)
-        print(x1.shape)
+        # print(x1.shape)
         x2 = self.down1(x1)
-        print(x2.shape)
+        # print(x2.shape)
         x3 = self.down2(x2)
-        print(x3.shape)
+        # print(x3.shape)
         x4 = self.down3(x3)
-        print(x4.shape)
+        # print(x4.shape)
         x5 = self.down4(x4)
-        print(x5.shape)
+        # print(x5.shape)
         x = self.up1(x5, x4)
-        print(x.shape)
+        # print(x.shape)
         x = self.up2(x, x3)
-        print(x.shape)
+        # print(x.shape)
         x = self.up3(x, x2)
-        print(x.shape)
+        # print(x.shape)
         x = self.up4(x, x1)
-        print(x.shape)
+        # print(x.shape)
         logits = self.out_conv(x)
-        print(logits.shape)
+        # print(logits.shape)
         
-        return logits
+        return torch.squeeze(logits, dim=2)
     
     
     

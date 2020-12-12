@@ -91,19 +91,8 @@ ratio = 0.7
 # train_imgs, train_gts, test_imgs, test_gts = split_data(data, labels, ratio)
 train_imgs, train_gts, test_imgs, test_gts = unet_utils.split_data(data, labels, ratio)
 
-train_imgs = train_imgs.permute(0,2,3,1)
-train_list = [features.filter_img(train_imgs[i], 'edge') for i in range(train_imgs.shape[0])]
-train_list = torch.stack(train_list)
-train_imgs = train_list.permute(0,3,1,2)
-
-test_imgs = test_imgs.permute(0,2,3,1)
-test_list = [features.filter_img(test_imgs[i], 'edge') for i in range(test_imgs.shape[0])]
-test_list = torch.stack(test_list)
-test_imgs = test_list.permute(0,3,1,2)
-
 # train_imgs = train_imgs.permute(0,3,1,2)
 # test_imgs = test_imgs.permute(0,3,1,2)
-
 
 # If a GPU is available (should be on Colab, we will use it)
 # if not torch.cuda.is_available():
@@ -117,7 +106,7 @@ learning_rate = 0.001
 k = 4
 
 model_name = 'UNet3D'
-filters = ['edge','contour']
+filters = ['edge','edge+']
 
 model = UNet3D.UNet3D(filters)
 criterion = torch.nn.CrossEntropyLoss()
