@@ -54,7 +54,52 @@ def load_data(num_images, rotate=True, angles=[90, 180, 270], seed=1):
 
 #-----------------------------------------------------------------------------
 
-def get_prediction(output):
+def load_data_BCE_loss(num_images, rotate=True, angles=[90, 180, 270], seed=1):
+    """
+    Return tensors of images and correspondind groundtruths in the
+    correct shape
+    img_tor : shape = (num_images, 3, 400, 400)
+    gts_tor : shape = (num_images, 400, 400)
+    """
+    imgs, gts = images.load_nimages(num_images, seed=seed)
+    
+    img_torch = torch.stack(imgs)
+    gts_torch = torch.stack(gts)
+    
+    gts_torch = gts_torch.round()
+    img_torch = img_torch.permute(0, 3, 1, 2)
+    
+    t = gts_torch.shape
+    gts_new = torch.zeros(t[0], t[1], t[2], 2)
+    
+    gts_new[gts_torch == 0] = torch.tensor([1., 0.])
+    gts_new[gts_torch ==1] = torch.tensor([0.,1.])
+    gts_new = gts_new.permute(0,3,1,2)
+    
+    if rotate:
+        
+        rotated_imgs = img_torch
+        rotated_gts = gts_new
+        
+        print ("Starting rotations")
+        
+        for i in range(len(angles)):
+            rot_imgs = features.rotate(img_torch, angles[i])
+            rot_gts = features.rotate(gts_new, angles[i])
+            
+            rotated_imgs = torch.cat((rotated_imgs, rot_imgs), 0)
+            rotated_gts = torch.cat((rotated_gts, rot_gts), 0)
+            
+        print ("Done !")
+        
+        img_torch = rotated_imgs
+        gts_new = rotated_gts 
+            
+    return img_torch, gts_new
+
+#-----------------------------------------------------------------------------
+
+def get_prediction(output, mask):
     """
     Get prediction image from the output of the U-net for a batch of size 1
     output : shape = (1, 2, 400, 400)
@@ -62,7 +107,23 @@ def get_prediction(output):
     """
     
     prediction = torch.argmax(output, 1)
+    imgheight = output.shape[1]
+    imgwidth = output.shape[2]
     
+    threshold = 0.25
+    w = 16
+    h = 16
+    
+    if (mask):
+        
+        for i in range(0, imgheight, h):
+            for j in range(0, imgwidth, w):
+                    patch = prediction[:, j:j+w, i:i+h].float()
+                    if (patch.mean() >= threshold):
+                        prediction[:, j:j+w, i:i+h] = 1
+                    else:
+                        prediction[:, j:j+w, i:i+h] = 0
+                    
     return prediction
 
 
@@ -157,8 +218,9 @@ def train(model, criterion, train_set, train_gts, test_set, test_gts,
             optimizer.step()
             
             with torch.no_grad():
-                pred = get_prediction(prediction)
-                acc, _ = validation.accuracy(pred, batch_y)
+                pred = get_prediction(prediction, True)
+                gt = get_prediction(batch_y, False)  ##### REMOVE AFTER TEST
+                acc, _ = validation.accuracy(pred, gt)  ### HERE TOO
                 accuracies_train.append(acc)
             
         # Make a scheduler step
@@ -181,10 +243,11 @@ def train(model, criterion, train_set, train_gts, test_set, test_gts,
 
                 # Evaluate the network (forward pass)
                 prediction = model(batch_x)
-                pred = get_prediction(prediction)
-                acc, _ = validation.accuracy(pred, batch_y)
+                pred = get_prediction(prediction, True)
+                gt = get_prediction(batch_y, False)  ### REMOVE AFTER TEST
+                acc, _ = validation.accuracy(pred, gt)  ## HERE TOO
                 accuracies_test.append(acc)
-                f1_test.append(validation.f1_score(pred, batch_y))
+                f1_test.append(validation.f1_score(pred, gt))  ## HERE TOO
             
         
         train_accuracy = sum(accuracies_train).item()/len(accuracies_train) 
