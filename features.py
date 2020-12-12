@@ -73,28 +73,26 @@ def contrast_img(img,factor=2.5):
 
 def rotate(img, angle):
     """
-    rotate a a single tensor image or tensor of tensor images by an angle angle
+    rotate a single tensor image or tensor of tensor images by an angle angle
     img : shape = (N, C, W, H)
     return a single tensor image or tensor of tensor images of rotated images
     return shape = (N, C, W, H)
     """
-    
     return functional.rotate(img, angle)
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
 
+def flip(img,direction):
+    """
+    fip a single tensor image or tensor of tensor images horizontally
+    (direction=1) or vertically (direction=2) or both (direction=3)
+    img : shape = (N, C, W, H)
+    return a single tensor image or tensor of tensor images of flipped images
+    return shape = (N, C, W, H)
+    """
+    if direction == 0:
+        return img
+    elif direction == 1:
+        return functional.hflip(img)
+    elif direction == 2:
+        return functional.vflip(img)
+    else:
+        return functional.vflip(functional.hflip(img))
