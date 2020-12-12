@@ -224,6 +224,7 @@ def train(model, criterion, train_set, train_gts,
         
         
     print ("Training completed")
-    return test_accuracy
+    if testing:
+        return test_accuracy
 
 #-----------------------------------------------------------------------------
