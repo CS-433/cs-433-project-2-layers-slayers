@@ -20,8 +20,11 @@ import features
 
 
 # ____________________________ Loading images ____________________________
-def load_data(num_images, rotate=False, flip=False, angles=[0,90,180,270], directions=[0,1,2,3],seed=1):
+def load_data(num_images, rotate=False, flip=False, angles=[0,90,180,270], directions=[0,1,2,3], seed=1):
     """
+    @param angles : angles of rotation
+    @param directions : direction of the flips, 0 nothing, 1 horizontal, 2 vertical, 3=1+2
+    
     Return tensors of images and correspondind groundtruths in the
     correct shape
     Augment the data set with rotation and flip if wanted
@@ -271,3 +274,4 @@ def convert_to_Image(img):
         return img
     else:
         raise TypeError("Cannot convert this type to PIL Image.")
+        

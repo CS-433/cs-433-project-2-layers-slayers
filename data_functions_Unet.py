@@ -145,6 +145,8 @@ def train(model, criterion, train_set, train_gts,
     if testing:
         test_size = test_set.shape[0]
         testing_indices = range(test_size)
+        
+    model = model.to(device)
      
     print("Starting training")
     
@@ -228,3 +230,4 @@ def train(model, criterion, train_set, train_gts,
         return test_accuracy
 
 #-----------------------------------------------------------------------------
+>>>>>>> master

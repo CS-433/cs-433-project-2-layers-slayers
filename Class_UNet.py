@@ -10,6 +10,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+import features
+
 #-----------------------------------------------------------------------------
 
 class DoubleConv(nn.Module):
@@ -71,9 +73,6 @@ class Up(nn.Module):
 
         x1 = F.pad(x1, [diffX // 2, diffX - diffX // 2,
                         diffY // 2, diffY - diffY // 2])
-        # if you have padding issues, see
-        # https://github.com/HaiyongJiang/U-Net-Pytorch-Unstructured-Buggy/commit/0e854509c2cea854e247a9c615f175f76fbb2e3a
-        # https://github.com/xiaopeng-liao/Pytorch-UNet/commit/8ebac70e633bac59fc22bb5195e513d5832fb3bd
         x = torch.cat([x2, x1], dim=1)
         return self.conv(x)
     
@@ -91,10 +90,12 @@ class OutConv(nn.Module):
 #-----------------------------------------------------------------------------
 
 class UNet(nn.Module):
-    def __init__(self):
+    def __init__(self, filters):
         super().__init__()
+        self.filters = filters
+        self.in_channels = 3*(1+len(self.filters))
         
-        self.ini = DoubleConv(3, 64)
+        self.ini = DoubleConv(self.in_channels, 64)
         self.down1 = Down(64, 128)
         self.down2 = Down(128, 256)
         self.down3 = Down(256, 512)
@@ -106,7 +107,14 @@ class UNet(nn.Module):
         self.out_conv = OutConv(64, 2)
 
     def forward(self, x):
-        #print(x.shape)
+        device = x.device
+        
+        x = x.permute(0,2,3,1)
+        x = features.cat_features(x, self.filters, contrast=False)
+        x = x.permute(0,3,1,2)
+        x = x.to(device)
+        
+        # print(x.shape)
         x1 = self.ini(x)
         #print(x1.shape)
         x2 = self.down1(x1)

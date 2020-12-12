@@ -12,7 +12,6 @@ models.
 # ____________________________ IMPORTS ____________________________
 import matplotlib.pyplot as plt
 import torch
-import torchvision.transforms.functional as functional
 from PIL import Image, ImageFilter, ImageEnhance
 
 import images
@@ -67,8 +66,74 @@ def contrast_img(img,factor=2.5):
     rimg = enhancer.enhance(factor)
     rimg = images.convert_to_tensor(rimg)
     return rimg
+    
+    
+# ____________________________ Adding features ____________________________
+def add_features (data, filters, contrast=True, factor=2.5):
+    """
+    Creates one more dimension on the data containing the images filtered
+    data : 4D tensor of the patches images
+    filters : list of strings containing the wanted filters
+    contrast : boolean (True for contrast filter, False otherwise)
+    factor : contrast factor (1 return original image)
+    """
+    
+    N = data.shape[0]
+    new_dim_len = len(filters) + 1   # +1 for original image
+    if (contrast):
+        new_dim_len += 1
+        
+    t = data.shape
+    new_data = torch.zeros((t[0], new_dim_len, t[1], t[2], t[3]), device=data.device)
+    
+    for i in range(N):
+        
+        imgs = [data[i]]
+        
+        for j in range(len(filters)):
+            
+            filtered_img = filter_img(data[i], filters[j]).to(data.device)
+            imgs.append(filtered_img)
+        
+        if (contrast):
+            
+            contrasted_img = contrast_img(data[i], factor).to(data.device)
+            imgs.append(contrasted_img)
+            
+        imgs_tensor = torch.stack(imgs)
+        new_data[i] = imgs_tensor
+        
+    return new_data
+    
 
-
+def cat_features (data, filters, contrast=True, factor=2.5):
+    """ Adds the filtered images along the channels' dimension.
+        __________
+        Parameters : data (4D tensor of images with channels at dim=3), filters (list of str),
+                     contrast (boolean), factor (float)
+        Returns : augmented data (4D tensor with increased channel dimension)
+    """
+    
+    t = data.shape
+    N = t[0]
+    new_channels_dim = 3*(1+len(filters))
+    if contrast:
+        new_channels_dim += 3
+    new_data = torch.zeros(t[0], t[1], t[2], new_channels_dim, device=data.device)
+    
+    for i in range(N):
+        imgs = data[i]
+        for j in range(len(filters)):
+            imgs = torch.cat((imgs,filter_img(data[i], filters[j]).to(data.device)),dim=2)
+        
+        if contrast:
+            imgs = torch.cat((imgs,contrast_img(data[i],factor).to(data.device)),dim=2)            
+        
+        new_data[i] = imgs
+        
+    return new_data
+        
+    
 #-----------------------------------------------------------------------------
 
 def rotate(img, angle):
