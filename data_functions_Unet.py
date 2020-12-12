@@ -136,12 +136,15 @@ def train(model, criterion, train_set, train_gts,
     """
     
     N_batch = int(train_set.shape[0]/batch_size)
-    N_batch_test = int(test_set.shape[0]/batch_size)
+    if testing:
+        N_batch_test = int(test_set.shape[0]/batch_size)
     
     train_size = train_set.shape[0]
     training_indices = range(train_size)
-    test_size = test_set.shape[0]
-    testing_indices = range(test_size)
+    
+    if testing:
+        test_size = test_set.shape[0]
+        testing_indices = range(test_size)
      
     print("Starting training")
     
