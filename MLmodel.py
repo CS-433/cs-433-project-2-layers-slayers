@@ -17,6 +17,93 @@ import random
 import features
 
 ##############################################################################
+# MODELS
+    
+class NeuralNet(torch.nn.Module): # ~79%
+    
+    def __init__(self):
+      
+        super().__init__()
+        self.conv1 = torch.nn.Conv2d(3, 32, kernel_size=3)
+        self.conv2 = torch.nn.Conv2d(32, 64, kernel_size=3)
+        self.conv2_drop = torch.nn.Dropout2d(p=0.5)
+        self.fc1 = torch.nn.Linear(256, 128)
+        self.fc2 = torch.nn.Linear(128, 2)
+
+    def forward(self, x):
+        relu = torch.nn.functional.relu
+        max_pool2d = torch.nn.functional.max_pool2d
+        x = relu(max_pool2d(self.conv1(x), 2)) 
+        #print(x.shape)
+        x = relu(max_pool2d(self.conv2_drop(self.conv2(x)), 2)) 
+        #print(x.shape)
+        x = x.reshape(-1, 256)
+        x = relu(self.fc1(x))
+        x = torch.nn.functional.dropout(x, training=self.training)
+        x = self.fc2(x)
+        return x
+    
+    
+#_____________________________________________________________________________
+class LogisticRegression(torch.nn.Module): # ~74%
+    def __init__(self):
+        super().__init__()
+        #EVENTUALLY PUT PIXELS AS PARAMETERS
+        self.num_pixels = 16
+        self.image_volume = 3 * self.num_pixels * self.num_pixels #colours x pixels 
+        self.num_classes = 2 #num_classes (one answer per image)
+        self.linear_transform = torch.nn.Linear(self.image_volume, self.num_classes, bias=True)
+
+    def forward(self, x):
+        batch_size = x.shape[0]
+        flattened_images = x.reshape(batch_size, self.image_volume)
+        return self.linear_transform(flattened_images)
+    
+    
+#_____________________________________________________________________________
+class Conv3DNet(torch.nn.Module): # ~83%
+    def __init__(self):
+        super().__init__()
+        #EVENTUALLY PUT PIXELS AS PARAMETERS
+        self.filters = ['unsharp','contour','edge']
+        self.num_pixels = 16
+        self.depth = 1+len(self.filters)
+        self.image_volume = 3 * self.num_pixels * self.num_pixels * self.depth #colours x pixels 
+        self.num_classes = 2 #num_classes (one answer per image)
+        
+        self.conv1 = torch.nn.Conv3d(3, 32, kernel_size=3, padding=(1,1,1))
+        self.conv2 = torch.nn.Conv3d(32, 64, kernel_size=3, padding=(1,1,1))
+        # self.conv3 = torch.nn.Conv3d(64, 32, kernel_size=3, padding=(1,1,1))
+        self.lin1 = torch.nn.Linear(self.depth*1024, self.depth*128)
+        self.lin2 = torch.nn.Linear(self.depth*128, self.num_classes)
+        
+        
+    def forward(self,x):
+        relu = torch.nn.functional.relu
+        max_pool3d = torch.nn.functional.max_pool3d
+        device = x.device
+        
+        filtered_x = []
+        for filt in self.filters:
+            filtered_x.append(torch.stack([features.filter_img(x.permute(0,2,3,1)[i],filt).to(device) 
+                                                   for i in range(x.shape[0])
+                                                           ]).permute(0,3,1,2))
+        
+        x = torch.stack([x,*filtered_x],dim=2)
+        
+        x = relu(max_pool3d(self.conv1(x),(1,2,2), padding=0))
+        x = relu(max_pool3d(self.conv2(x),(1,2,2), padding=0))
+        # x = relu(max_pool3d(self.conv3(x),(1,2,2),padding=0))
+        x = x.view(-1, self.depth*1024)
+        x = relu(self.lin1(x))
+        x = relu(self.lin2(x))
+        return x
+    
+    
+#_____________________________________________________________________________
+    
+
+##############################################################################
 # k Cross validation
 
 #useful functions
@@ -109,6 +196,7 @@ def train(model, criterion, train_set, train_gts, test_set, test_gts,
             # clear the gradients
             optimizer.zero_grad()
 
+            print(batch_x.shape, batch_y.shape)
             # Evaluate the network (forward pass)
             prediction = model(batch_x)
             loss = criterion(prediction, batch_y)
@@ -151,86 +239,7 @@ def train(model, criterion, train_set, train_gts, test_set, test_gts,
     print ("Training completed")
     return test_accuracy
     
-##############################################################################
-# MODELS
-    
-class NeuralNet(torch.nn.Module): # ~80%
-    
-    def __init__(self):
-      
-        super().__init__()
-        self.conv1 = torch.nn.Conv2d(3, 32, kernel_size=3)
-        self.conv2 = torch.nn.Conv2d(32, 64, kernel_size=3)
-        self.conv2_drop = torch.nn.Dropout2d(p=0.5)
-        self.fc1 = torch.nn.Linear(256, 128)
-        self.fc2 = torch.nn.Linear(128, 2)
 
-    def forward(self, x):
-        relu = torch.nn.functional.relu
-        max_pool2d = torch.nn.functional.max_pool2d
-        x = relu(max_pool2d(self.conv1(x), 2)) 
-        #print(x.shape)
-        x = relu(max_pool2d(self.conv2_drop(self.conv2(x)), 2)) 
-        #print(x.shape)
-        x = x.reshape(-1, 256)
-        x = relu(self.fc1(x))
-        x = torch.nn.functional.dropout(x, training=self.training)
-        x = self.fc2(x)
-        return x
-    
-    
-class LogisticRegression(torch.nn.Module): # ~74%
-    def __init__(self):
-        super().__init__()
-        #EVENTUALLY PUT PIXELS AS PARAMETERS
-        self.num_pixels = 16
-        self.image_volume = 3 * self.num_pixels * self.num_pixels #colours x pixels 
-        self.num_classes = 2 #num_classes (one answer per image)
-        self.linear_transform = torch.nn.Linear(self.image_volume, self.num_classes, bias=True)
-
-    def forward(self, x):
-        batch_size = x.shape[0]
-        flattened_images = x.reshape(batch_size, self.image_volume)
-        return self.linear_transform(flattened_images)
-    
-    
-class Conv3DNet(torch.nn.Module): # ~84%
-    def __init__(self):
-        super().__init__()
-        #EVENTUALLY PUT PIXELS AS PARAMETERS
-        self.filters = ['contour','edge']
-        self.num_pixels = 16
-        self.depth = 1+len(self.filters)
-        self.image_volume = 3 * self.num_pixels * self.num_pixels * self.depth #colours x pixels 
-        self.num_classes = 2 #num_classes (one answer per image)
-        
-        self.conv1 = torch.nn.Conv3d(3, 32, kernel_size=3, padding=(1,1,1))
-        self.conv2 = torch.nn.Conv3d(32, 64, kernel_size=3, padding=(1,1,1))
-        # self.conv3 = torch.nn.Conv3d(64, 32, kernel_size=3, padding=(1,1,1))
-        self.lin1 = torch.nn.Linear(self.depth*1024, self.depth*128)
-        self.lin2 = torch.nn.Linear(self.depth*128, self.num_classes)
-        
-        
-    def forward(self,x):
-        relu = torch.nn.functional.relu
-        max_pool3d = torch.nn.functional.max_pool3d
-        device = x.device
-            
-        filtered_x = []
-        for filt in self.filters:
-            filtered_x.append(torch.stack([features.filter_img(x.permute(0,2,3,1)[i],filt).to(device) 
-                                                   for i in range(x.shape[0])
-                                                           ]).permute(0,3,1,2))
-        
-        x = torch.stack([x,*filtered_x],dim=2)
-        
-        x = relu(max_pool3d(self.conv1(x),(1,2,2), padding=0))
-        x = relu(max_pool3d(self.conv2(x),(1,2,2), padding=0))
-        # x = relu(max_pool3d(self.conv3(x),(1,2,2),padding=0))
-        x = x.view(-1, self.depth*1024)
-        x = relu(self.lin1(x))
-        x = relu(self.lin2(x))
-        return x
     
     
     

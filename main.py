@@ -13,6 +13,10 @@ import matplotlib.pyplot as plt
 
 import MLmodel
 import images
+import Class_UNet as unet
+import data_functions_Unet as unet_utils
+import features
+import UNet3D
 
 
 #############################################################################
@@ -76,21 +80,29 @@ def split_data(data, labels, ratio, seed=1):
 ############################################################################
 # MAIN    
 
-size_train_set = 50
+size_train_set = 10
 
-data, labels = load_data(size_train_set)
+# data, labels = load_data(size_train_set)
+data, labels = unet_utils.load_data(size_train_set)
 
 div = int(data.shape[0]/2)
 
 ratio = 0.7
-train_imgs, train_gts, test_imgs, test_gts = split_data(data, labels, ratio)
+# train_imgs, train_gts, test_imgs, test_gts = split_data(data, labels, ratio)
+train_imgs, train_gts, test_imgs, test_gts = unet_utils.split_data(data, labels, ratio)
 
-t = train_imgs.shape
-s = test_imgs.shape
+train_imgs = train_imgs.permute(0,2,3,1)
+train_list = [features.filter_img(train_imgs[i], 'edge') for i in range(train_imgs.shape[0])]
+train_list = torch.stack(train_list)
+train_imgs = train_list.permute(0,3,1,2)
 
+test_imgs = test_imgs.permute(0,2,3,1)
+test_list = [features.filter_img(test_imgs[i], 'edge') for i in range(test_imgs.shape[0])]
+test_list = torch.stack(test_list)
+test_imgs = test_list.permute(0,3,1,2)
 
-train_imgs = train_imgs.reshape((t[0], t[3], t[1], t[2]))
-test_imgs = test_imgs.reshape((s[0], s[3], s[1], s[2]))
+# train_imgs = train_imgs.permute(0,3,1,2)
+# test_imgs = test_imgs.permute(0,3,1,2)
 
 
 # If a GPU is available (should be on Colab, we will use it)
@@ -100,15 +112,36 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 
-
 num_epochs = 15
 learning_rate = 0.001
 k = 4
 
-model = MLmodel.Conv3DNet()
+model_name = 'UNet3D'
+filters = ['edge','contour']
+
+model = UNet3D.UNet3D(filters)
 criterion = torch.nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, weight_decay=5e-4)
 scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.95)
 
-MLmodel.train(model, criterion, train_imgs, train_gts, test_imgs, test_gts, optimizer, scheduler, num_epochs, device)
+# MLmodel.train(model, criterion, train_imgs, train_gts, test_imgs, test_gts, optimizer, scheduler, num_epochs, device)
+unet_utils.train(model, criterion, train_imgs, train_gts, test_imgs, test_gts, optimizer, scheduler, device, num_epochs)
+
 # fold4_accuracy = MLmodel.k_cross_validation(k, model, criterion, data, labels, optimizer, scheduler, num_epochs, device)
+
+torch.save(model.state_dict(), f'saved-models/{model_name}.pt')
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

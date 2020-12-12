@@ -95,6 +95,8 @@ def train(model, criterion, train_set, train_gts, test_set, test_gts,
     @param num_epochs: int
     """
     
+    model = model.to(device)
+    
     N_batch = int(train_set.shape[0]/batch_size)
     N_batch_test = int(test_set.shape[0]/batch_size)
     
