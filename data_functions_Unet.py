@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 """
 Created on Thu Dec 10 19:44:55 2020
-
 @author: cyrilvallez
 """
 
@@ -12,47 +11,6 @@ import numpy as np
 import images
 import validation
 import features
-
-#-----------------------------------------------------------------------------
-
-def load_data(num_images, rotate=True, angles=[90, 180, 270], seed=1):
-    """
-    Return tensors of images and correspondind groundtruths in the
-    correct shape
-    img_tor : shape = (num_images, 3, 400, 400)
-    gts_tor : shape = (num_images, 400, 400)
-    """
-    imgs, gts = images.load_nimages(num_images, seed=seed)
-    
-    img_torch = torch.stack(imgs)
-    gts_torch = torch.stack(gts)
-    
-    gts_torch = gts_torch.round().long()
-    img_torch = img_torch.permute(0, 3, 1, 2)
-    
-    if rotate:
-        
-        
-        rotated_imgs = img_torch
-        rotated_gts = gts_torch
-        
-        print ("Starting rotations")
-        
-        for i in range(len(angles)):
-            rot_imgs = features.rotate(img_torch, angles[i])
-            rot_gts = features.rotate(gts_torch, angles[i])
-            
-            rotated_imgs = torch.cat((rotated_imgs, rot_imgs), 0)
-            rotated_gts = torch.cat((rotated_gts, rot_gts), 0)
-            
-        print ("Done !")
-        
-        img_torch = rotated_imgs
-        gts_torch = rotated_gts 
-            
-    return img_torch, gts_torch
-
-#-----------------------------------------------------------------------------
 
 def load_data_BCE_loss(num_images, rotate=True, angles=[90, 180, 270], seed=1):
     """
@@ -163,8 +121,9 @@ def split_data(data, labels, ratio, seed=1):
 
 #-----------------------------------------------------------------------------
 
-def train(model, criterion, train_set, train_gts, test_set, test_gts,
-          optimizer, scheduler, device, num_epochs, batch_size=1):
+def train(model, criterion, train_set, train_gts,
+          optimizer, scheduler, device, num_epochs, batch_size=1,testing=False,
+          test_set=torch.empty(0), test_gts=torch.empty(0)):
     """
     @param model: torch.nn.Module
     @param criterion: torch.nn.modules.loss._Loss
@@ -225,39 +184,43 @@ def train(model, criterion, train_set, train_gts, test_set, test_gts,
             
         # Make a scheduler step
         #scheduler.step()
-            
-        # Test the quality on the test set
-        model.eval()
         
-        perm_indices_test = np.random.permutation(testing_indices)
-        
-        for i in range(N_batch_test):
+        if testing:
+            # Test the quality on the test set
+            model.eval()
             
-            batch_indices_test = perm_indices_test[i*batch_size:(i+1)*batch_size]
+            perm_indices_test = np.random.permutation(testing_indices)
             
-            batch_x = test_set[batch_indices_test]
-            batch_y = test_gts[batch_indices_test]
-            batch_x, batch_y = batch_x.to(device), batch_y.to(device)
+            for i in range(N_batch_test):
+                
+                batch_indices_test = perm_indices_test[i*batch_size:(i+1)*batch_size]
+                
+                batch_x = test_set[batch_indices_test]
+                batch_y = test_gts[batch_indices_test]
+                batch_x, batch_y = batch_x.to(device), batch_y.to(device)
+                
+                with torch.no_grad():
+    
+                    # Evaluate the network (forward pass)
+                    prediction = model(batch_x)
+                    pred = get_prediction(prediction, True)
+                    gt = get_prediction(batch_y, False)  ### REMOVE AFTER TEST
+                    acc, _ = validation.accuracy(pred, gt)  ## HERE TOO
+                    accuracies_test.append(acc)
+                    f1_test.append(validation.f1_score(pred, gt))  ## HERE TOO
+                
             
-            with torch.no_grad():
-
-                # Evaluate the network (forward pass)
-                prediction = model(batch_x)
-                pred = get_prediction(prediction, True)
-                gt = get_prediction(batch_y, False)  ### REMOVE AFTER TEST
-                acc, _ = validation.accuracy(pred, gt)  ## HERE TOO
-                accuracies_test.append(acc)
-                f1_test.append(validation.f1_score(pred, gt))  ## HERE TOO
-            
-        
-        train_accuracy = sum(accuracies_train).item()/len(accuracies_train) 
-        test_accuracy = sum(accuracies_test).item()/len(accuracies_test)
-        test_f1 = sum(f1_test).item()/len(f1_test)
-        print("Epoch {} | Train accuracy: {:.5f} || test accuracy: {:.5f} || test f1: {:.5f}" \
-              .format(epoch+1, train_accuracy, test_accuracy, test_f1))
+            train_accuracy = sum(accuracies_train).item()/len(accuracies_train) 
+            test_accuracy = sum(accuracies_test).item()/len(accuracies_test)
+            test_f1 = sum(f1_test).item()/len(f1_test)
+            print("Epoch {} | Train accuracy: {:.5f} || test accuracy: {:.5f} || test f1: {:.5f}" \
+                  .format(epoch+1, train_accuracy, test_accuracy, test_f1))
+        else:
+            train_accuracy = sum(accuracies_train).item()/len(accuracies_train)
+            print("Epoch {} | Train accuracy: {:.5f}".format(epoch+1,train_accuracy))
         
         
     print ("Training completed")
+    return test_accuracy
 
 #-----------------------------------------------------------------------------
-
