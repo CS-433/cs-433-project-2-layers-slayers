@@ -78,10 +78,7 @@ def f1_score(predictions, groundtruths):
     _ , acc = accuracy(predictions, groundtruths)
     
     return (acc["tp"]) / (acc["tp"] + 0.5*(acc["fp"] + acc["fn"]))
-    
-    
-    
-    
+     
     
     
     

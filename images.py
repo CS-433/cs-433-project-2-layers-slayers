@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 """
 Created on Sat Dec 5 2020
-
 @author: alangmeier
 __________
 This file contains methods to load images, converting them, cropping them as 
@@ -17,9 +16,64 @@ import torchvision.transforms as transforms
 import matplotlib.pyplot as plt
 import os,sys
 from PIL import Image
+import features
 
 
 # ____________________________ Loading images ____________________________
+def load_data(num_images, rotate=False, flip=False, angles=[0,90,180,270], directions=[0,1,2,3], seed=1):
+    """
+    @param angles : angles of rotation
+    @param directions : direction of the flips, 0 nothing, 1 horizontal, 2 vertical, 3=1+2
+    
+    Return tensors of images and correspondind groundtruths in the
+    correct shape
+    Augment the data set with rotation and flip if wanted
+    img_tor : shape = (num_images, 3, 400, 400)
+    gts_tor : shape = (num_images, 400, 400)
+    """
+    imgs, gts = load_nimages(num_images, seed=seed)
+    
+    img_torch = torch.stack(imgs)
+    gts_torch = torch.stack(gts)
+    
+    gts_torch = gts_torch.round().long()
+    img_torch = img_torch.permute(0, 3, 1, 2)
+    
+    if (rotate or flip):
+        if not(rotate):
+            angles = [0]
+        if not(flip):
+            directions = [0]
+        
+        
+        augmented_imgs = torch.empty(0)
+        augmented_gts = torch.empty(0)
+        
+        print ("Starting rotations and/or flip")
+        
+        for angle in angles:
+            for direction in directions:
+                trans_imgs = img_torch
+                trans_gts = gts_torch
+                if rotate:
+                    trans_imgs = features.rotate(trans_imgs, angle)
+                    trans_gts = features.rotate(trans_gts, angle)
+                if flip:
+                    trans_imgs = features.flip(trans_imgs, direction)
+                    trans_gts = features.flip(trans_gts, direction)
+                
+                    
+                augmented_imgs = torch.cat((augmented_imgs, trans_imgs), 0)
+                augmented_gts = torch.cat((augmented_gts, trans_gts), 0)
+            
+        print ("Done !")
+        
+        img_torch = augmented_imgs
+        gts_torch = augmented_gts 
+            
+    return img_torch, gts_torch
+
+
 
 def load_image(infilename:str):
     """ Loads the image specified by the filename (string) passed as argument.
@@ -42,10 +96,12 @@ def load_image(infilename:str):
 #     data = mpimg.imread(image_dir + image_filename)
 #     return data
 
-def load_nimages(n, train=True, seed=1):
+def load_nimages(n, train=True, filters=None, seed=1):
     """ Loads n (int) images in an arbitrary order and returns a list of these 
         and another of their corresponding groundtruths if the argument train 
         is set to True (default). Otherwise, it returns one list of test images.
+        It is also possible to precise a list of filters with values specified 
+        inside method features.filter_img (default: None).
         __________
         Parameters : n (int), train=True (boolean), filters=None (list of str)
         Returns : images (list of torch tensors), 
@@ -70,6 +126,7 @@ def load_nimages(n, train=True, seed=1):
         print("Loading " + str(n) + " corresponding groundtruths")
         gt_imgs = [load_image(gt_dir + files[i]) for i in range(n)]
         
+    
         return imgs, gt_imgs
     
     else:
@@ -161,6 +218,8 @@ def overlay_images(img, predicted_img):
         Parameters : image (torch tensor), groundtruth (torch_tensor)
         Returns : overlayed image (Image object)
     """
+    
+    img = img.permute(1,2,0)
     w = img.size()[0]
     h = img.size()[1]
     color_mask = torch.zeros((w, h, 3), dtype=torch.uint8)
@@ -215,5 +274,4 @@ def convert_to_Image(img):
         return img
     else:
         raise TypeError("Cannot convert this type to PIL Image.")
-
-
+        
