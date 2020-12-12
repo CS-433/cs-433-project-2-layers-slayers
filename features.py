@@ -12,6 +12,7 @@ models.
 # ____________________________ IMPORTS ____________________________
 import matplotlib.pyplot as plt
 import torch
+import torchvision.transforms.functional as functional
 from PIL import Image, ImageFilter, ImageEnhance
 
 import images
@@ -66,8 +67,19 @@ def contrast_img(img,factor=2.5):
     rimg = enhancer.enhance(factor)
     rimg = images.convert_to_tensor(rimg)
     return rimg
+
+
+#-----------------------------------------------------------------------------
+
+def rotate(img, angle):
+    """
+    rotate a a single tensor image or tensor of tensor images by an angle angle
+    img : shape = (N, C, W, H)
+    return a single tensor image or tensor of tensor images of rotated images
+    return shape = (N, C, W, H)
+    """
     
-    
+    return functional.rotate(img, angle)
     
     
     

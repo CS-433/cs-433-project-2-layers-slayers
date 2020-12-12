@@ -10,10 +10,12 @@ import torch
 import numpy as np
 
 import images
+import validation
+import features
 
 #-----------------------------------------------------------------------------
 
-def load_data(num_images, seed=1):
+def load_data(num_images, rotate=True, angles=[90, 180, 270], seed=1):
     """
     Return tensors of images and correspondind groundtruths in the
     correct shape
@@ -28,23 +30,41 @@ def load_data(num_images, seed=1):
     gts_torch = gts_torch.round().long()
     img_torch = img_torch.permute(0, 3, 1, 2)
     
-    
+    if rotate:
+        
+        
+        rotated_imgs = img_torch
+        rotated_gts = gts_torch
+        
+        print ("Starting rotations")
+        
+        for i in range(len(angles)):
+            rot_imgs = features.rotate(img_torch, angles[i])
+            rot_gts = features.rotate(gts_torch, angles[i])
+            
+            rotated_imgs = torch.cat((rotated_imgs, rot_imgs), 0)
+            rotated_gts = torch.cat((rotated_gts, rot_gts), 0)
+            
+        print ("Done !")
+        
+        img_torch = rotated_imgs
+        gts_torch = rotated_gts 
+            
     return img_torch, gts_torch
 
 #-----------------------------------------------------------------------------
 
 def get_prediction(output):
     """
-    Get prediction image from the output of the U-net
+    Get prediction image from the output of the U-net for a batch of size 1
     output : shape = (1, 2, 400, 400)
-    prediction : shape = (400, 400)
+    prediction : shape = (1, 400, 400)
     """
-    t = output.shape
-    output = output.view(t[1], t[2], t[3])
     
-    prediction = torch.argmax(output, 0)
+    prediction = torch.argmax(output, 1)
     
     return prediction
+
 
 #-----------------------------------------------------------------------------
 
@@ -110,6 +130,7 @@ def train(model, criterion, train_set, train_gts, test_set, test_gts,
         model.train()
         accuracies_train = []
         accuracies_test = []
+        f1_test = []
         
         # Permute training indices
         perm_indices = np.random.permutation(training_indices)
@@ -136,7 +157,9 @@ def train(model, criterion, train_set, train_gts, test_set, test_gts,
             optimizer.step()
             
             with torch.no_grad():
-                accuracies_train.append(accuracy(prediction, batch_y))
+                pred = get_prediction(prediction)
+                acc, _ = validation.accuracy(pred, batch_y)
+                accuracies_train.append(acc)
             
         # Make a scheduler step
         #scheduler.step()
@@ -158,13 +181,17 @@ def train(model, criterion, train_set, train_gts, test_set, test_gts,
 
                 # Evaluate the network (forward pass)
                 prediction = model(batch_x)
-                accuracies_test.append(accuracy(prediction, batch_y))
+                pred = get_prediction(prediction)
+                acc, _ = validation.accuracy(pred, batch_y)
+                accuracies_test.append(acc)
+                f1_test.append(validation.f1_score(pred, batch_y))
             
         
         train_accuracy = sum(accuracies_train).item()/len(accuracies_train) 
         test_accuracy = sum(accuracies_test).item()/len(accuracies_test)
-        print("Epoch {} | Train accuracy: {:.5f} and test accuracy: {:.5f}" \
-              .format(epoch+1, train_accuracy, test_accuracy))
+        test_f1 = sum(f1_test).item()/len(f1_test)
+        print("Epoch {} | Train accuracy: {:.5f} || test accuracy: {:.5f} || test f1: {:.5f}" \
+              .format(epoch+1, train_accuracy, test_accuracy, test_f1))
         
         
     print ("Training completed")
