@@ -71,7 +71,7 @@ def load_data(num_images, rotate=False, flip=False, angles=[0,90,180,270], direc
         print ("Done !")
         
         img_torch = augmented_imgs
-        gts_torch = augmented_gts 
+        gts_torch = augmented_gts.round().long()
             
     return img_torch, gts_torch
 

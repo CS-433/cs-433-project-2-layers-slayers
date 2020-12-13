@@ -69,7 +69,8 @@ def train(model, criterion, train_set, train_gts,
             optimizer.zero_grad()
 
             # Evaluate the network (forward pass)
-            prediction = model(batch_x)            
+            prediction = model(batch_x)          
+            print(prediction.dtype,batch_y.dtype)
             loss = criterion(prediction, batch_y)
         
             # Compute the gradient
