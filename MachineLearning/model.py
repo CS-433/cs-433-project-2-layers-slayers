@@ -77,7 +77,7 @@ class UNet3D(nn.Module):
         self.down2 = Down3D(128, 256)
         self.down3 = Down3D(256, 512)
         self.down4 = Down3D(512, 1024)
-        self.up1 = Up3D(1024, 512) 
+        self.up1 = Up3D(1024, 512)
         self.up2 = Up3D(512, 256)
         self.up3 = Up3D(256, 128)
         self.up4 = Up3D(128, 64)
@@ -161,7 +161,7 @@ class NeuralNet(torch.nn.Module):
         x = self.fc2(x)
         return x
     
-#_____________________________________________________________________________
+#---------------------------------------------------------------------------
 class Conv3DNet(torch.nn.Module):
     def __init__(self):
         super().__init__()
@@ -306,7 +306,7 @@ class Down3D(nn.Module):
         super().__init__()
         self.maxpool_conv = nn.Sequential(
             nn.MaxPool3d(kernel_size=(1,2,2), stride=(1,2,2)),
-            DoubleConv(in_channels, out_channels)
+            DoubleConv3D(in_channels, out_channels)
             )
         
     def forward(self, x):
@@ -324,7 +324,7 @@ class Up3D(nn.Module):
 
         self.up = nn.ConvTranspose3d(in_channels , out_channels,
                                      kernel_size=2, stride=2)
-        self.conv = DoubleConv(in_channels, out_channels)
+        self.conv = DoubleConv3D(in_channels, out_channels)
 
 
     def forward(self, x1, x2):
