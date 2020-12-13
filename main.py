@@ -15,7 +15,8 @@ import MachineLearning as ML
 # MAIN    
 
 size_train_set = 10
-data, labels = Imaging.load_data(size_train_set)
+rotation_angles = [0,45,315]
+data, labels = Imaging.load_data(size_train_set, rotate=True, angles=rotation_angles)
 
 # crop_data = torch.empty(0)
 # for ind in range(data.shape[0]):
@@ -41,18 +42,35 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 num_epochs = 25
 learning_rate = 0.001
 
-model_name = 'UNet3D_'
+model_name = f'UNet_{size_train_set}_{num_epochs}'
 filters = ['edge','edge+']
 
-model = ML.model.UNet3D()
+model = ML.model.UNet()
 # model = ML.model.LogisticRegression()
 criterion = torch.nn.CrossEntropyLoss()
 optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate, weight_decay=1e-8)
 scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.95)
 
-print(train_imgs.shape, train_gts.shape, test_imgs.shape, test_gts.shape)
-ML.training.train(model, criterion, train_imgs, train_gts,
-                                optimizer, scheduler, device, num_epochs, 1,
-                                True, test_imgs, test_gts)
+tr_acc, te_acc, te_f1 = ML.training.train(model, criterion, train_imgs, train_gts,
+                                          optimizer, scheduler, device, num_epochs, batch_size=1,
+                                          testing=True, test_set=test_imgs, test_gts=test_gts)
 
 torch.save(model.state_dict(), f'saved-models/{model_name}.pt')
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
