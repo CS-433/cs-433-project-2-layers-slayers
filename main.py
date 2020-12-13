@@ -10,7 +10,7 @@ Main file to run learning process.
 import torch
 
 import Imaging
-import MachineLearning
+import MachineLearning as ML
 ############################################################################
 # MAIN    
 
@@ -44,15 +44,14 @@ learning_rate = 0.001
 model_name = 'UNet3D'
 filters = ['edge','edge+']
 
-# model = MachineLearning.model.UNet3D(filters)
-
-model = MachineLearning.model.LogisticRegression()
+model = ML.model.UNet3D()
+# model = ML.model.LogisticRegression()
 criterion = torch.nn.CrossEntropyLoss()
-optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
 scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.95)
 
-MachineLearning.training.train(model, criterion, train_imgs, train_gts,
-                                optimizer, scheduler, device, num_epochs, 5,
+ML.training.train(model, criterion, train_imgs, train_gts,
+                                optimizer, scheduler, device, num_epochs, 1,
                                 True, test_imgs, test_gts)
 
-# torch.save(model.state_dict(), f'saved-models/{model_name}.pt')
+torch.save(model.state_dict(), f'saved-models/{model_name}.pt')
