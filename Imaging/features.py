@@ -13,6 +13,7 @@ models. Also contains methods to rotate and flip images.
 import torch
 from PIL import Image, ImageFilter, ImageEnhance
 import torchvision.transforms.functional as functional
+import scipy.ndimage as sc
 
 import Imaging as images
 
@@ -143,7 +144,10 @@ def rotate(img, angle):
     return a single tensor image or tensor of tensor images of rotated images
     return shape = (N, C, W, H)
     """
-    return functional.rotate(img, angle)
+    Ndim = len(img.shape)
+    rot = sc.rotate(img, angle, (Ndim-2,Ndim-1), reshape=False, order=0, \
+                    mode='mirror')
+    return torch.from_numpy(rot)
 
 def flip(img,direction):
     """
