@@ -68,7 +68,7 @@ class UNet(nn.Module):
 # ---------------------------------------------------------------------------
     
 class UNet3D(nn.Module):
-    def __init__(self, filters=[]):
+    def __init__(self, filters=['edge','edge+']):
         super().__init__()
         self.filters = filters
         
