@@ -13,11 +13,11 @@ import MachineLearning as ML
 import Imaging
 import helpers
 
-model = ML.model.UNet3D()
-model.load_state_dict(torch.load('saved-models/UNet.pt', map_location=torch.device('cpu')))
+model = ML.model.UNet3D().cuda()
+model.load_state_dict(torch.load('saved-models/UNet.pt'))
 model.eval()
 
-imgs = Imaging.load_test()
+imgs = Imaging.load_test().cuda()
 print(imgs.shape)
 
 preds = torch.zeros(imgs.shape[0],imgs.shape[2],imgs.shape[3])
