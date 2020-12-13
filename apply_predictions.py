@@ -11,12 +11,14 @@ import os
 import torch
 import MachineLearning as ML
 import Imaging
+import helpers
 
-model = ML.model.UNet3D()
-model.load_state_dict(torch.load('saved-models/UNet.pt', map_location=torch.device('cpu')))
+
+model = ML.model.UNet3D().cuda()
+model.load_state_dict(torch.load('saved-models/UNet.pt'))
 model.eval()
 
-imgs = Imaging.load_test()
+imgs = Imaging.load_test().cuda()
 print(imgs.shape)
 
 preds = torch.zeros(imgs.shape[0],imgs.shape[2],imgs.shape[3])
@@ -31,8 +33,14 @@ files = np.array(sorted(os.listdir(test_dir)))
 for i in range(len(files)):
   Imaging.save_img(preds[i],files[i],'output/')
   
-  
-  
+
+submission_filename = 'first_try.csv'
+image_filenames = []
+for i in range(1,51):
+  image_filename = 'output/test_' + '%d' % i + '.png'
+  image_filenames.append(image_filename)
+
+helpers.masks_to_submission(submission_filename, *image_filenames)
   
   
   
