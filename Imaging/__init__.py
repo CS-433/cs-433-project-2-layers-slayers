@@ -75,7 +75,27 @@ def load_data(num_images, rotate=False, flip=False, angles=[0,90,180,270], direc
             
     return img_torch, gts_torch
 
+#-----------------------------------------------------------------------------
+def load_test ():
+    """
+    load all the test images
+    """
+    test_dir = "data/test_set_images/"
+    files = np.array(sorted(os.listdir(test_dir)))
+    
+    print("Loading the test set")
+    
+    tests = [load_image(test_dir + files[i] + "/" + files[i] + ".png") for \
+             i in range(len(files))]
+    
+    print ("Done !")
+    
+    test_torch = torch.stack(tests)
+    test_torch = test_torch.permute(0, 3, 1, 2)
+    
+    return test_torch
 
+#-----------------------------------------------------------------------------
 def split_data(data, labels, ratio, seed=1):
     """split the dataset based on the split ratio."""
     
@@ -94,7 +114,7 @@ def split_data(data, labels, ratio, seed=1):
     labels_testing = shuffled_labels[stop:N]
 
     return data_training, labels_training, data_testing, labels_testing
-
+#-----------------------------------------------------------------------------
 def labels_BCELoss(gts_torch):
     """ Transform the labels to be used with the BCE Loss
         __________
@@ -108,7 +128,7 @@ def labels_BCELoss(gts_torch):
     gts_new[gts_torch ==1] = torch.tensor([0.,1.])
     gts_new = gts_new.permute(0,3,1,2)
     return gts_new
-
+#-----------------------------------------------------------------------------
 def load_image(infilename:str):
     """ Loads the image specified by the filename (string) passed as argument.
         __________
@@ -119,17 +139,7 @@ def load_image(infilename:str):
     data = mpimg.imread(infilename)
     return torch.from_numpy(data)
 
-# def load_image(i:int):
-#     """ Loads image i (int) contained in the training dataset (from 1 to 100).
-#         Parameters : i (int)
-#         Returns : img (array of floats) """
-    
-#     image_dir = "data/training/images/"
-#     image_filename = "satImage_%.3d.png" % i
-    
-#     data = mpimg.imread(image_dir + image_filename)
-#     return data
-
+#-----------------------------------------------------------------------------
 def load_nimages(n, train=True, filters=None, seed=1):
     """ Loads n (int) images in an arbitrary order and returns a list of these 
         and another of their corresponding groundtruths if the argument train 
@@ -246,7 +256,7 @@ def concatenate_images(img, gt_img):
         cimg = torch.cat((img8, gt_img_3c), 1)
     return Image.fromarray(cimg.numpy())
 
-
+#-----------------------------------------------------------------------------
 def overlay_images(img, predicted_img):
     """ Overlays an image and its groundtruth so that the groundtruth image is 
         a red slightly transparent mask.
