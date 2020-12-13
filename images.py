@@ -20,7 +20,8 @@ import features
 
 
 # ____________________________ Loading images ____________________________
-def load_data(num_images, rotate=False, flip=False, angles=[0,90,180,270], directions=[0,1,2,3], seed=1):
+def load_data(num_images, rotate=False, flip=False, angles=[0,90,180,270],
+              directions=[0,1,2,3], seed=1):
     """
     @param angles : angles of rotation
     @param directions : direction of the flips, 0 nothing, 1 horizontal, 2 vertical, 3=1+2
@@ -143,7 +144,27 @@ def load_nimages(n, train=True, filters=None, seed=1):
                 for i in range(n)]
         
         return imgs
+    
+#-----------------------------------------------------------------------------
 
+def load_test ():
+    """
+    load all the test images
+    """
+    test_dir = "data/test_set_images/"
+    files = np.array(sorted(os.listdir(test_dir)))
+    
+    print("Loading the test set")
+    
+    tests = [load_image(test_dir + files[i] + "/" + files[i] + ".png") for \
+             i in range(len(files))]
+    
+    print ("Done !")
+    
+    test_torch = torch.stack(tests)
+    test_torch = test_torch.permute(0, 3, 1, 2)
+    
+    return test_torch
 
 # ____________________________ Saving images ____________________________
 

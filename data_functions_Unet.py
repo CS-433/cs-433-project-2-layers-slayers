@@ -218,7 +218,7 @@ def train(model, criterion, train_set, train_gts, test_set, test_gts,
             optimizer.step()
             
             with torch.no_grad():
-                pred = get_prediction(prediction, True)
+                pred = get_prediction(prediction, False)
                 gt = get_prediction(batch_y, False)  ##### REMOVE AFTER TEST
                 acc, _ = validation.accuracy(pred, gt)  ### HERE TOO
                 accuracies_train.append(acc)
@@ -243,7 +243,7 @@ def train(model, criterion, train_set, train_gts, test_set, test_gts,
 
                 # Evaluate the network (forward pass)
                 prediction = model(batch_x)
-                pred = get_prediction(prediction, True)
+                pred = get_prediction(prediction, False)
                 gt = get_prediction(batch_y, False)  ### REMOVE AFTER TEST
                 acc, _ = validation.accuracy(pred, gt)  ## HERE TOO
                 accuracies_test.append(acc)
