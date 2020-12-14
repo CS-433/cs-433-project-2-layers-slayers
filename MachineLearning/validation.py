@@ -104,7 +104,7 @@ def f1_score(tp,fp,fn):
 
 # ______________________ Prediction with several models ______________________
 
-def predict_with_models(models_list, batch_x, sensitivity = 0):
+def predict_with_models(models_list, batch_x, sensitivity = 1):
     """ Returns a prediction given a list of models (there is a road if the
         sum of each prediction per model is above sensitivity)
         __________
@@ -118,4 +118,4 @@ def predict_with_models(models_list, batch_x, sensitivity = 0):
     for model in models_list:
         prediction += get_prediction(model(batch_x), False)
         
-    return (prediction > sensitivity).long()
+    return (prediction >= sensitivity).long()
