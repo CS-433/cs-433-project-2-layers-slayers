@@ -113,6 +113,7 @@ def predict_with_models(models_list, batch_x, sensitivity = 1):
     prediction = 0
     
     for model in models_list:
-        prediction += get_prediction(model(batch_x), False)
+        with torch.no_grad():
+            prediction += get_prediction(model(batch_x), False)
         
     return (prediction >= sensitivity).long()
