@@ -81,7 +81,8 @@ def load_test ():
     load all the test images
     """
     test_dir = "data/test_set_images/"
-    files = np.array(sorted(os.listdir(test_dir)))
+    N = len(os.listdir(test_dir))
+    files = ['test_' + '%d' %i for i in range(1,N+1)]
     
     print("Loading the test set")
     

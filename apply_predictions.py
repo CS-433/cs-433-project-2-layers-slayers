@@ -29,7 +29,8 @@ for i in range(num_subgroups-1):
 print(preds.shape)
 
 test_dir = "data/test_set_images/"
-files = np.array(sorted(os.listdir(test_dir)))
+N = 50
+files = ['test_' + '%d' %i for i in range(1,N+1)]
 for i in range(len(files)):
   Imaging.save_img(preds[i],files[i],'output/')
   

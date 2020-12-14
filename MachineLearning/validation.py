@@ -12,7 +12,7 @@ not, by implementing accuracies computations and other methods of validation.
 import torch
 
 # ____________________________ Get prediction ________________________________
-def get_prediction(output, mask):
+def get_prediction(output, mask, w=16, h=16, threshold=0.25):
     """
     Get prediction image from the output of the U-net for a batch of size 1
     output : shape = (1, 2, 400, 400)
@@ -24,11 +24,8 @@ def get_prediction(output, mask):
         prediction = torch.argmax(output, 1)
     
     if (mask):
-        imgheight = output.shape[1]
-        imgwidth = output.shape[2]
-        threshold = 0.25
-        w = 16
-        h = 16    
+        imgheight = prediction.shape[1]
+        imgwidth = prediction.shape[2] 
         for i in range(0, imgheight, h):
             for j in range(0, imgwidth, w):
                     patch = prediction[:, j:j+w, i:i+h].float()
