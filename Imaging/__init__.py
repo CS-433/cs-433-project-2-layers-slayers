@@ -115,20 +115,7 @@ def split_data(data, labels, ratio, seed=1):
     labels_testing = shuffled_labels[stop:N]
 
     return data_training, labels_training, data_testing, labels_testing
-#-----------------------------------------------------------------------------
-def labels_BCELoss(gts_torch):
-    """ Transform the labels to be used with the BCE Loss
-        __________
-        Parameters : torch tensor shape [N,W,H]
-        Returns : torch tensor shape [N,2,W,H]
-    """
-    t = gts_torch.shape
-    gts_new = torch.zeros(t[0], t[1], t[2], 2)
-    
-    gts_new[gts_torch == 0] = torch.tensor([1., 0.])
-    gts_new[gts_torch ==1] = torch.tensor([0.,1.])
-    gts_new = gts_new.permute(0,3,1,2)
-    return gts_new
+
 #-----------------------------------------------------------------------------
 def load_image(infilename:str):
     """ Loads the image specified by the filename (string) passed as argument.
