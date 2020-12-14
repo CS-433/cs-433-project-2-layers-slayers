@@ -98,3 +98,21 @@ def f1_score(tp,fp,fn):
     
     
     return tp / (tp + 0.5*(fp + fn))
+
+# ______________________ Prediction with several models ______________________
+
+def predict_with_models(models_list, batch_x, sensitivity = 1):
+    """ Returns a prediction given a list of models (there is a road if the
+        sum of each prediction per model is above sensitivity)
+        __________
+        Parameters :
+            models_list : list of models
+            batch_x : set of images, shape : (N,C,W,H)     
+            sensitivity : sensitivity of prediction
+    """
+    prediction = 0
+    
+    for model in models_list:
+        prediction += get_prediction(model(batch_x), False)
+        
+    return (prediction >= sensitivity).long()
