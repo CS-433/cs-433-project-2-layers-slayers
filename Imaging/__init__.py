@@ -104,15 +104,13 @@ def split_data(data, labels, ratio, seed=1):
     
     N = data.shape[0]
     shuffle = np.random.permutation(np.arange(N))
-    shuffled_data = data[shuffle]
-    shuffled_labels = labels[shuffle]
     
     stop = round(ratio*N)
     
-    data_training = shuffled_data[0:stop]
-    labels_training = shuffled_labels[0:stop]
-    data_testing = shuffled_data[stop:N]
-    labels_testing = shuffled_labels[stop:N]
+    data_training = data[shuffle[0:stop]]
+    labels_training = labels[shuffle[0:stop]]
+    data_testing = data[shuffle[stop:N]]
+    labels_testing = labels[shuffle[stop:N]]
 
     return data_training, labels_training, data_testing, labels_testing
 

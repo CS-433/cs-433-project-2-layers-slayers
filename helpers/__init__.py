@@ -24,7 +24,7 @@ def mask_to_submission_strings(im, img_number):
             patch = im[i:i + patch_size, j:j + patch_size]
             label = patch_to_label(patch)
             yield("{:03d}_{}_{},{}".format(img_number, j, i, label))
-
+     
 
 def masks_to_submission(submission_filename, images):
     """Converts images into a submission file"""
