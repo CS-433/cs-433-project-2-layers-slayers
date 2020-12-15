@@ -115,7 +115,7 @@ def predict_with_models(model_type, models_filenames_list, batch_x, sensitivity 
     prediction = 0
     
     for model_name in models_filenames_list:
-        torch.save(model_type.state_dict(), f'saved-models/{model_name}.pt')
+        model_type.load_state_dict(torch.load(f'saved-models/{model_name}.pt'))
         with torch.no_grad():
             prediction += get_prediction(model_type(batch_x), False)
         
