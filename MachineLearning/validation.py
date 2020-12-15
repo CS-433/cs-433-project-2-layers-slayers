@@ -102,22 +102,35 @@ def f1_score(tp,fp,fn):
 
 # ______________________ Prediction with several models ______________________
 
-def predict_with_models(models_list, batch_x, sensitivity = 1):
+def predict_with_models(model_type, models_filenames_list, batch_x, sensitivity = 1):
     """ Returns a prediction given a list of models (there is a road if the
         sum of each prediction per model is above sensitivity)
         __________
         Parameters :
-            models_list : list of models
+            model_type : instance of the class of the models
+            models_list : list of models' filenames
             batch_x : set of images, shape : (N,C,W,H)     
             sensitivity : sensitivity of prediction
     """
     prediction = 0
     
-    for model in models_list:
+    for model_name in models_filenames_list:
+        torch.save(model_type.state_dict(), f'saved-models/{model_name}.pt')
         with torch.no_grad():
-            prediction += get_prediction(model(batch_x), False)
+            prediction += get_prediction(model_type(batch_x), False)
         
     return (prediction >= sensitivity).long()
+
+
+def predict_with_predictions(predictions_list, sensitivity = 1):
+    """ Returns a prediction given a list of predictions (there is a road if the
+        sum of each prediction is above sensitivity)
+        __________
+        Parameters :
+            predictions_list : list of predictions  
+            sensitivity : sensitivity of prediction
+    """
+    return (sum(predictions_list) >= sensitivity).long()
 
 
 # ______________________ Save and load a list ______________________
