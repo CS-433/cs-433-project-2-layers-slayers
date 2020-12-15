@@ -18,7 +18,8 @@ from MachineLearning import validation
 # ----------------------------------------------------------------------------
 def train(model, criterion, train_set, train_gts,
           optimizer, scheduler, device, num_epochs, batch_size=1,testing=False,
-          test_set=torch.empty(0), test_gts=torch.empty(0)):
+          test_set=torch.empty(0), test_gts=torch.empty(0),save_model = False,
+          model_name = 'model', epoch_freq_save = 5):
     """
     @param model: torch.nn.Module
     @param criterion: torch.nn.modules.loss._Loss
@@ -132,6 +133,10 @@ def train(model, criterion, train_set, train_gts,
             train_accuracy = sum(accuracies_train).item()/len(accuracies_train)
             print("Epoch {} | Train accuracy: {:.5f}".format(epoch+1,train_accuracy))
         
+        if save_model: #because Google Colab sometimes freezes
+            if (epoch+1)%epoch_freq_save == 0:
+                torch.save(model.state_dict(), f'saved-models/{model_name}.pt')
+                print("Model Saved !")
         
     print ("Training completed")
     if testing:
@@ -161,7 +166,8 @@ def separate_train_test(list_ind,i,dataset):
     return dataset_train, dataset_test
 
 def k_cross_train(k, model, criterion, dataset, gts, optimizer, scheduler,
-                  num_epochs_list, device, batch_size=1, keep_models=True):
+                  num_epochs_list, device, batch_size=1, split_indicies=[],
+                  save_model = False, epoch_freq_save = 5):
     """
     Train the model with k-fold cross validation. Returns a track of the
     accurcies and F1 scores, for each training.
@@ -172,30 +178,35 @@ def k_cross_train(k, model, criterion, dataset, gts, optimizer, scheduler,
     """  
       
     dataset = [dataset, gts]
-    list_ind = partition(list(range(dataset[0].shape[0])),k)
+    
+    if len(split_indicies)==0:
+        list_ind = partition(list(range(dataset[0].shape[0])),k)
+    else:
+        list_ind = split_indicies
     
     train_accuracy_epoch_k = []
     test_accuracy_epoch_k = []
     test_f1_epoch_k = []
     models_list = []
-    for i in range(k):
-        print("Fold: {}/{}".format(i+1,k))
+    
+    iteration = list(range(k))
+    iteration.reverse()
+    for i in iteration:
+        print("Fold: {} out of {}".format(k-i,k))
+        model_name = f'UNet_{size_train_set}_{num_epochs_list[i]}_{i}'
+        
         dataset_train, dataset_test = separate_train_test(list_ind,i,dataset)
         
         train_accuracy_epoch, test_accuracy_epoch, test_f1_epoch = train(
             model, criterion, dataset_train[0], dataset_train[1], optimizer,
             scheduler, device, num_epochs_list[i], batch_size, True,
-            dataset_test[0], dataset_test[1])
+            dataset_test[0], dataset_test[1], save_model, model_name, epoch_freq_save)
+        
+        torch.save(model.state_dict(), f'saved-models/{model_name}.pt')
         
         train_accuracy_epoch_k.append(train_accuracy_epoch)
         test_accuracy_epoch_k.append(test_accuracy_epoch)
         test_f1_epoch_k.append(test_f1_epoch)
         
-        if keep_models:
-            model_copy =  pickle.loads(pickle.dumps(model))
-            models_list.append(model_copy)
-        
-    if keep_models:
-        return models_list, train_accuracy_epoch_k, test_accuracy_epoch_k, test_f1_epoch_k
-    else:
-        return train_accuracy_epoch_k, test_accuracy_epoch_k, test_f1_epoch_k
+
+    return train_accuracy_epoch_k, test_accuracy_epoch_k, test_f1_epoch_k
