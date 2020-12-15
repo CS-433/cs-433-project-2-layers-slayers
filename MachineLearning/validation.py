@@ -10,6 +10,7 @@ not, by implementing accuracies computations and other methods of validation.
 
 # ____________________________ IMPORTS ____________________________
 import torch
+import pickle
 
 # ____________________________ Get prediction ________________________________
 def get_prediction(output, mask, w=16, h=16, threshold=0.25):
@@ -117,3 +118,23 @@ def predict_with_models(models_list, batch_x, sensitivity = 1):
             prediction += get_prediction(model(batch_x), False)
         
     return (prediction >= sensitivity).long()
+
+
+# ______________________ Save and load a list ______________________
+
+def save_list(list_to_save,file_name):
+    """
+    Saves the list to file_name
+    """
+    open_file = open(file_name, "wb")
+    pickle.dump(list_to_save, open_file)
+    open_file.close()
+
+def load_list(file_name):
+    """
+    Loads and returns the list from file_name
+    """
+    open_file = open(file_name, "rb")
+    loaded_list = pickle.load(open_file)
+    open_file.close()
+    return loaded_list

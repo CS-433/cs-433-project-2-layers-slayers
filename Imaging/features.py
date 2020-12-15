@@ -165,3 +165,36 @@ def flip(img,direction):
         return functional.vflip(img)
     else:
         return functional.vflip(functional.hflip(img))
+    
+    
+# ____________________________ Standardizing data ____________________________
+
+def standardize(img):
+    """ Standardizes each channel of the input image, i.e. mean=0 and std=1.
+        __________
+        Parameters : images (torch Tensor) of dim (N,C,H,W)
+        Returns : images (torch Tensor) with the same dimensions and each channel standardized.
+    """
+    
+    if len(img.shape) == 3:
+        img = img.unsqueeze(0)
+    
+    rimg = torch.zeros_like(img)
+    for i in range(img.shape[0]):
+        for channel in range(3):
+            rimg[i,channel] = (img[i,channel] - torch.mean(img[i,channel])) / torch.std(img[i,channel])
+            
+    
+    return rimg.squeeze(0)
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
