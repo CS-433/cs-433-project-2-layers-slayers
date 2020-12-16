@@ -23,3 +23,8 @@ External Libraries
 - SciPy
 - pickle
 - random
+
+Internal Libraries
+- helpers : *contains functions to help with the submission format of AIcrowd*
+- Imaging : *contains all the functions related to image data processing (more details below)*
+- MachineLearning : *contains all the functions and classes related to the implemented models (more details below)*
