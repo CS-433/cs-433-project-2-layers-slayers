@@ -70,7 +70,7 @@ def contrast_img(img,factor=2.5):
     
     
 # ____________________________ Adding features ____________________________
-def add_features (data, filters, contrast=True, factor=2.5):
+def add_features (data, filters, contrast=True, factor=2.5, pos_original=1):
     """
     Creates one more dimension on the data containing the images filtered
     data : 4D tensor of the patches images
@@ -78,7 +78,7 @@ def add_features (data, filters, contrast=True, factor=2.5):
     contrast : boolean (True for contrast filter, False otherwise)
     factor : contrast factor (1 return original image)
     """
-    
+    data = data.permute(0,2,3,1)
     N = data.shape[0]
     new_dim_len = len(filters) + 1   # +1 for original image
     if (contrast):
@@ -104,6 +104,11 @@ def add_features (data, filters, contrast=True, factor=2.5):
         imgs_tensor = torch.stack(imgs)
         new_data[i] = imgs_tensor
         
+    new_data = new_data.permute(1,0,4,2,3)
+    new_data_ = new_data[0].clone()
+    new_data[0], new_data[pos_original] = new_data[pos_original], new_data_
+    new_data = new_data.permute(1,2,0,3,4)
+        
     return new_data
     
 
@@ -114,7 +119,7 @@ def cat_features (data, filters, contrast=True, factor=2.5):
                      contrast (boolean), factor (float)
         Returns : augmented data (4D tensor with increased channel dimension)
     """
-    
+    data = data.permute(0,2,3,1)
     t = data.shape
     N = t[0]
     new_channels_dim = 3*(1+len(filters))
@@ -132,7 +137,7 @@ def cat_features (data, filters, contrast=True, factor=2.5):
         
         new_data[i] = imgs
         
-    return new_data
+    return new_data.permute(0,3,1,2)
         
     
 # ____________________________ Augmenting set ____________________________
@@ -165,36 +170,3 @@ def flip(img,direction):
         return functional.vflip(img)
     else:
         return functional.vflip(functional.hflip(img))
-    
-    
-# ____________________________ Standardizing data ____________________________
-
-def standardize(img):
-    """ Standardizes each channel of the input image, i.e. mean=0 and std=1.
-        __________
-        Parameters : images (torch Tensor) of dim (N,C,H,W)
-        Returns : images (torch Tensor) with the same dimensions and each channel standardized.
-    """
-    
-    if len(img.shape) == 3:
-        img = img.unsqueeze(0)
-    
-    rimg = torch.zeros_like(img)
-    for i in range(img.shape[0]):
-        for channel in range(3):
-            rimg[i,channel] = (img[i,channel] - torch.mean(img[i,channel])) / torch.std(img[i,channel])
-            
-    
-    return rimg.squeeze(0)
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
