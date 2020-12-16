@@ -202,7 +202,8 @@ def k_cross_train(k, model, criterion, dataset, gts, optimizer, scheduler,
             model, criterion, train_imgs, train_gts, optimizer,
             scheduler, device, num_epochs_list[i], batch_size, True,
             test_imgs, test_gts, save_model, model_name, epoch_freq_save)
-        
+          
+        del train_imgs, train_gts, test_imgs, test_gts
         torch.save(model.state_dict(), f'saved-models/{model_name}.pt')
         
         train_accuracy_epoch_k.append(train_accuracy_epoch)
