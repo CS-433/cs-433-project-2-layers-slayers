@@ -6,7 +6,7 @@ Machine Learning (CS-433) : Project 2.
 - Cyril Vallez (<cyril.vallez@epfl.ch>)
 - André Langmeier (<andre.langmeier@epfl.ch>)
 
-## Folders (to be updated)
+## Folders
 - data : *contains all the data used to train and test the models*.
 - saved-models : *contains all the models we used for our kept AIcrowd prediction*
 - Imaging, MachineLearning, helpers : *contain the internal packages used for the project : helpers, Imaging and MachineLearning*
