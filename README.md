@@ -7,7 +7,7 @@ Machine Learning (CS-433) : Project 2.
 - André Langmeier (<andre.langmeier@epfl.ch>)
 
 ## Folders (to be updated)
-- data : *contains all the data used to train and test the model*.
+- data : *contains all the data used to train and test the models*.
 - saved-models : *contains all the models we used for our kept AIcrowd prediction*
 - Imaging, MachineLearning, helpers : *contain the internal packages used for the project : helpers, Imaging and MachineLearning*
 
@@ -37,3 +37,6 @@ MachineLearning
 - The model sub-module contains all the model classes (torch.nn.module) used in the project
 - The validation sub-module contains functions to measure the efficiency of a model, as well as functions returning predictions
 - The training sub-module contains the training functions
+
+Running the code
+- To reproduce the setup we used for our AIcrowd prediction, simply run the script run.py
