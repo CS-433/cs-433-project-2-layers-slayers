@@ -10,3 +10,16 @@ Data, Leaderboard available on : <https://www.aicrowd.com/challenges/epfl-ml-roa
 
 ## Folders (to be updated)
 - data : *contains all the data used to train and test the model*.
+- saved-models : *contains all the models we used for our kept AIcrowd prediction*
+- Imaging, MachineLearning : *contain our two packages we coded for the project : Imaging and MachineLearning*
+
+## Libraries and Packages
+External Libraries
+- NumPy
+- Matplotlib
+- PyTorch
+- PIL
+- os,sys
+- SciPy
+- pickle
+- random
