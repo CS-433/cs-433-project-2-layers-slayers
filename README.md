@@ -21,6 +21,7 @@ External Libraries
 - SciPy
 - pickle
 - random
+- itertools
 
 Internal Libraries
 - helpers : *contains functions to help with the submission format of AIcrowd*
