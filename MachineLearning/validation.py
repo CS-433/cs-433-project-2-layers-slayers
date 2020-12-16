@@ -11,6 +11,8 @@ not, by implementing accuracies computations and other methods of validation.
 # ____________________________ IMPORTS ____________________________
 import torch
 import pickle
+import itertools
+import matplotlib.pyplot as plt
 
 # ____________________________ Get prediction ________________________________
 def get_prediction(output, mask, w=16, h=16, threshold=0.25):
@@ -87,7 +89,7 @@ def accuracy(predictions, groundtruths):
     return overall_accuracy, detailed_accuracy
     
 
-# ____________________________ F1-Score computation ____________________________
+# ____________________________ F1-Score computation __________________________
 
 def f1_score(tp,fp,fn):
     """ Computes the F1-Score :
@@ -102,6 +104,27 @@ def f1_score(tp,fp,fn):
 
 # ______________________ Prediction with several models ______________________
 
+def sum_prediction_models(model_type, models_filenames_list, batch_x):
+    """ Returns the sum of prediction given a list of models (there is a road if the
+        sum of each prediction per model is above sensitivity)
+        __________
+        Parameters :
+            model_type : instance of the class of the models
+            models_list : list of models' filenames
+            batch_x : set of images, shape : (N,C,W,H)   
+    """
+    prediction = 0
+    
+    for model_name in models_filenames_list:
+        model_type.load_state_dict(torch.load(f'saved-models/{model_name}.pt'))
+        with torch.no_grad():
+            prediction += get_prediction(model_type(batch_x), False)
+
+    return prediction
+
+
+
+
 def predict_with_models(model_type, models_filenames_list, batch_x, sensitivity = 1):
     """ Returns a prediction given a list of models (there is a road if the
         sum of each prediction per model is above sensitivity)
@@ -112,28 +135,93 @@ def predict_with_models(model_type, models_filenames_list, batch_x, sensitivity 
             batch_x : set of images, shape : (N,C,W,H)     
             sensitivity : sensitivity of prediction
     """
-    prediction = 0
-    
-    for model_name in models_filenames_list:
-        model_type.load_state_dict(torch.load(f'saved-models/{model_name}.pt'))
-        with torch.no_grad():
-            prediction += get_prediction(model_type(batch_x), False)
-        
-    return (prediction >= sensitivity).long()
+            
+    return (sum_prediction_models(model_type, models_filenames_list, batch_x) >= sensitivity).long()
 
 
-def predict_with_predictions(predictions_list, sensitivity = 1):
-    """ Returns a prediction given a list of predictions (there is a road if the
-        sum of each prediction is above sensitivity)
+
+def sub_lists(my_list):
+    """ 
+    Returns a list of all sublists of liste
+    """
+    subs =[]
+    for i in range(0, len(my_list)+1):
+        temp = [list(x) for x in itertools.combinations(my_list, i)]
+        if len(temp)>0:
+            subs.extend(temp)
+    return subs
+
+
+
+
+def best_combination_of_models(models_list, list_model_names, data, labels, device, validation_type = 'F1'):
+    """ Returns the combination of models yielding the highest validation on
+        the training set (see predict_with_models)
         __________
         Parameters :
-            predictions_list : list of predictions  
-            sensitivity : sensitivity of prediction
+            models_list : list of instances of models
+            list_predictions_list : list of list of model names (one list per model)
+            data : validation set
+            labels : groundtruths of validation set
+            validation_type : a validation method (F1 or accuracy)
     """
-    return (sum(predictions_list) >= sensitivity).long()
-
+    validation_best = 0
+    sensitivity_best = 0
+    combination_best = []
+    mod_combinations = sub_lists(list(range(len(list_predictions_lists))))
+    del mod_combinations[0]
+    
+    
+    f1_scores = []
+    accuracies = []
+    for combination in mod_combinations:
+        print(combination)
+        names = [list_model_names[i] for i in combination]
+        concatenated = [j for i in names for j in i]
+        
+        for sensitivity in range(1,len(concatenated)+1):
+            print(sensitivity)
+            
+            tp = 0;
+            fp = 0;
+            fn = 0;
+            accuracies_batch = []
+            for j in range(data.shape[0]):
+                prediction_batch = 0
+                batch_x = data[j;j+1]
+                batch_y = labels[j:j+1]
+                batch_x, batch_y = batch_x.to(device), batch_y.to(device)
+                for i in combination:
+                    model = models_list[i]
+                    with torch.no_grad():
+                        prediction_batch += sum_prediction_models(model, list_model_names[i], batch_x)
+                prediction = (prediction_batch >= sensitivity).long()
+                acc_b, details = accuracy(prediction, batch_y)
+                accuracies_batch.append(acc_b)
+                tp += details['tp']
+                fp += details['fp']
+                fn += details['fn']
+            
+            f1 = f1_score(tp, fp, fn)
+            acc = sum(accuracies_batch).item()/len(accuracies_batch)
+            
+            accuracies.append(acc)
+            f1_scores.append(f1)
+            
+            if validation_type == 'accuracy':
+                validation_meas = acc
+            else:
+                validation_meas = f1
+            
+            if validation_meas > validation_best:
+                validation_best = validation_meas
+                combination_best = combination
+                sensitivity_best = sensitivity
+    
+    return combination_best, sensitivity_best, validation_best, accuracies, f1_scores
 
 # ______________________ Save and load a list ______________________
+
 
 def save_list(list_to_save,file_name):
     """
@@ -151,3 +239,26 @@ def load_list(file_name):
     loaded_list = pickle.load(open_file)
     open_file.close()
     return loaded_list
+
+# ___________________ PLot the tracks (accuracy and f1) ______________________
+    
+def plot_kfold_track(list_of_tracklists, list_of_colours = [], linetype = '.-'):
+    """
+    Plot the tracks for a k-fold training
+    __________
+    Parameters :
+        list_of_tracklists : list of list of tracks (each list = 1 fold)
+        list_of_colours : list of colours for each fold
+    """
+    n_after = 0
+    for i in range(len(list_of_tracklists)):
+        n_before = n_after + 1
+        n_after += len(list_of_tracklists[i])
+        epochs = list(range(n_before,n_after+1))
+        
+        if len(list_of_colours)==len(list_of_tracklists):
+            plt.plot(epochs,list_of_tracklists[i],list_of_colours[i]+linetype)
+        else:
+            plt.plot(epochs,list_of_tracklists[i],linetype)
+        
+        
