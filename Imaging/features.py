@@ -107,6 +107,7 @@ def add_features (data, filters, contrast=True, factor=2.5, pos_original=1):
     new_data = new_data.permute(1,0,4,2,3)
     new_data_ = new_data[0].clone()
     new_data[0], new_data[pos_original] = new_data[pos_original], new_data_
+    del new_data_
     new_data = new_data.permute(1,2,0,3,4)
         
     return new_data
