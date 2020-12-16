@@ -152,7 +152,7 @@ def partition (list_in, n):
     return [list_in[i::n] for i in range(n)]
 
 
-def separate_train_test(list_ind,i,dataset):
+def separate_train_test(list_ind,i,data,labels):
     """
     Separate dataset in one dataset_test (where indicies are list_ind[i]) and
     one training_dataset (the remaining indices).
@@ -161,9 +161,14 @@ def separate_train_test(list_ind,i,dataset):
     list_rest = list_ind.copy()
     del list_rest[i]
     list_rest = [item for sublist in list_rest for item in sublist]
-    dataset_test = [dataset[0][list_ind[i]],dataset[1][list_ind[i]]]
-    dataset_train = [dataset[0][list_rest],dataset[1][list_rest]]
-    return dataset_train, dataset_test
+    
+    train_imgs = data[list_rest]
+    train_gts = labels[list_rest]
+    del list_rest
+    test_imgs = data[list_ind[i]]
+    test_gts = labels[list_ind[i]]
+    
+    return train_imgs, train_gts, test_imgs, test_gts
 
 def k_cross_train(k, model, criterion, dataset, gts, optimizer, scheduler,
                   num_epochs_list, device, batch_size=1, split_indicies=[],
@@ -176,8 +181,7 @@ def k_cross_train(k, model, criterion, dataset, gts, optimizer, scheduler,
     element greater). If keep_models is True, also returns a list of the
     copied models after each training.
     """  
-      
-    dataset = [dataset, gts]
+    size_data_set = dataset.shape[0]
     
     if len(split_indicies)==0:
         list_ind = partition(list(range(dataset[0].shape[0])),k)
@@ -187,20 +191,17 @@ def k_cross_train(k, model, criterion, dataset, gts, optimizer, scheduler,
     train_accuracy_epoch_k = []
     test_accuracy_epoch_k = []
     test_f1_epoch_k = []
-    models_list = []
     
-    iteration = list(range(k))
-    iteration.reverse()
-    for i in iteration:
-        print("Fold: {} out of {}".format(k-i,k))
-        model_name = f'UNet_{size_train_set}_{num_epochs_list[i]}_{i}'
+    for i in range(k):
+        print("Fold: {} out of {}".format(i+1,k))
+        model_name = f'UNet_{size_data_set}_{num_epochs_list[i]}_k{i}'
         
-        dataset_train, dataset_test = separate_train_test(list_ind,i,dataset)
+        train_imgs, train_gts, test_imgs, test_gts = separate_train_test(list_ind,i,dataset,gts)
         
         train_accuracy_epoch, test_accuracy_epoch, test_f1_epoch = train(
-            model, criterion, dataset_train[0], dataset_train[1], optimizer,
+            model, criterion, train_imgs, train_gts, optimizer,
             scheduler, device, num_epochs_list[i], batch_size, True,
-            dataset_test[0], dataset_test[1], save_model, model_name, epoch_freq_save)
+            test_imgs, test_gts, save_model, model_name, epoch_freq_save)
         
         torch.save(model.state_dict(), f'saved-models/{model_name}.pt')
         
