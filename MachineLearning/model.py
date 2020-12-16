@@ -61,9 +61,8 @@ class UNet(nn.Module):
 # ---------------------------------------------------------------------------
     
 class UNet3D(nn.Module):
-    def __init__(self, filters=['edge','edge+']):
+    def __init__(self):
         super().__init__()
-        self.filters = filters
         
         self.ini = DoubleConv3D(3, 64)
         self.down1 = Down3D(64, 128)
@@ -77,15 +76,6 @@ class UNet3D(nn.Module):
         self.out_conv = OutConv3D(64, 2)
 
     def forward(self, x):
-        device = x.device
-        
-        x = x.permute(0,2,3,1)
-        x = features.add_features(x, self.filters, contrast=False)
-        x = x.permute(1,0,4,2,3)
-        x_ = x[0].clone()
-        x[0], x[1] = x[1], x_
-        x = x.permute(1,2,0,3,4)
-        x = x.to(device)
         
         # print(x.shape)
         x1 = self.ini(x)
