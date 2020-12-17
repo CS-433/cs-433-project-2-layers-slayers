@@ -17,7 +17,7 @@ External Libraries
 - Matplotlib
 - PyTorch (needs to be installed)
 - PIL
-- os,sys
+- os, sys
 - SciPy
 - pickle
 - random
@@ -30,7 +30,7 @@ Internal Libraries
 
 ## Code organization
 Imaging
-- The Imaging library contains functions to load the images in tensor format and some functions for the data processing (cropping, splitting in train/validation sets, etc.). It also contains functions that analyses predictions visually.
+- The Imaging library contains functions to load the images in tensor format and some functions for the data processing (cropping, splitting in train/validation sets, etc.). It also contains functions that analyze predictions visually.
 - The features sub-module contains the data enhancement functions for rotations and flipping, and for the filters.
 
 MachineLearning
