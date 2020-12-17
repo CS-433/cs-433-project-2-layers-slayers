@@ -104,7 +104,7 @@ def f1_score(tp,fp,fn):
 
 # ______________________ Prediction with several models ______________________
 
-def sum_prediction_models(model_type, models_filenames_list, batch_x):
+def sum_prediction_models(model_type, models_filenames_list, batch_x, printage = False):
     """ Returns the sum of prediction given a list of models (there is a road if the
         sum of each prediction per model is above sensitivity)
         __________
@@ -116,6 +116,8 @@ def sum_prediction_models(model_type, models_filenames_list, batch_x):
     prediction = 0
     
     for model_name in models_filenames_list:
+        if printage:
+            print(model_name)
         model_type.load_state_dict(torch.load(f'saved-models/{model_name}.pt'))
         with torch.no_grad():
             prediction += get_prediction(model_type(batch_x), False)
@@ -164,46 +166,40 @@ def best_combination_of_models(models_list, list_model_names, data, labels, devi
             data : validation set
             labels : groundtruths of validation set
             validation_type : a validation method (F1 or accuracy)
+            printage : print or not, the current model being evaluated
     """
     validation_best = 0
     sensitivity_best = 0
     combination_best = []
-    mod_combinations = sub_lists(list(range(len(list_predictions_lists))))
+    mod_combinations = sub_lists(list(range(len(list_model_names))))
     del mod_combinations[0]
     
     
     f1_scores = []
     accuracies = []
-    for combination in mod_combinations:
-        print(combination)
+    for combination in mod_combinations: #loop over all the possible combinations of models
+        print(combination)        
+        
+        prediction_sum = 0
+        for j in range(data.shape[0]): #mini batch the data, not to explose RAM
+            batch_x = data[j:j+1]
+            batch_y = labels[j:j+1]
+            batch_x = batch_x.to(device)
+            
+            for i in combination:
+                model = models_list[i]
+                with torch.no_grad():
+                    prediction_sum += sum_prediction_models(model, list_model_names[i], batch_x, False)
+        
         names = [list_model_names[i] for i in combination]
         concatenated = [j for i in names for j in i]
-        
-        for sensitivity in range(1,len(concatenated)+1):
-            print(sensitivity)
-            
-            tp = 0;
-            fp = 0;
-            fn = 0;
-            accuracies_batch = []
-            for j in range(data.shape[0]):
-                prediction_batch = 0
-                batch_x = data[j;j+1]
-                batch_y = labels[j:j+1]
-                batch_x, batch_y = batch_x.to(device), batch_y.to(device)
-                for i in combination:
-                    model = models_list[i]
-                    with torch.no_grad():
-                        prediction_batch += sum_prediction_models(model, list_model_names[i], batch_x)
-                prediction = (prediction_batch >= sensitivity).long()
-                acc_b, details = accuracy(prediction, batch_y)
-                accuracies_batch.append(acc_b)
-                tp += details['tp']
-                fp += details['fp']
-                fn += details['fn']
-            
+        for sensitivity in range(1,len(concatenated)+1): #loop over all the possible sensitivities       
+            prediction = (prediction_sum >= sensitivity).long()
+            acc, details = accuracy(prediction, labels)
+            tp = details['tp']
+            fp = details['fp']
+            fn = details['fn']
             f1 = f1_score(tp, fp, fn)
-            acc = sum(accuracies_batch).item()/len(accuracies_batch)
             
             accuracies.append(acc)
             f1_scores.append(f1)
@@ -213,7 +209,7 @@ def best_combination_of_models(models_list, list_model_names, data, labels, devi
             else:
                 validation_meas = f1
             
-            if validation_meas > validation_best:
+            if validation_meas > validation_best: #to track the model with higher validation
                 validation_best = validation_meas
                 combination_best = combination
                 sensitivity_best = sensitivity
