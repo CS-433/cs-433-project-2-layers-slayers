@@ -43,4 +43,4 @@ MachineLearning
 
 Running the code
 - To reproduce the setup we used for our AIcrowd prediction, simply run the script *run.py*. 
-  - Note : To obtain our final submission, we did not exactly run that file, but did a training on several computers, on several days, eventhough running the script should produce similar results.
+  - Note : To obtain our final submission, we did not exactly run that file, but did a training on several computers, on several days, eventhough running the script should produce similar results. We also sometimes adjusted the model manually, what this script can not do.
