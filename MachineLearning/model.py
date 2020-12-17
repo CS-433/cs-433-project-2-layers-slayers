@@ -170,8 +170,8 @@ class Conv3DNet(torch.nn.Module):
         filtered_x = []
         for filt in self.filters:
             filtered_x.append(torch.stack([features.filter_img(x.permute(0,2,3,1)[i],filt).to(device) 
-                                                   for i in range(x.shape[0])
-                                                           ]).permute(0,3,1,2))
+                                           for i in range(x.shape[0])
+                                          ]).permute(0,3,1,2))
         
         x = torch.stack([x,*filtered_x],dim=2)
         

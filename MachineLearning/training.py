@@ -23,12 +23,18 @@ def train(model, criterion, train_set, train_gts,
     """
     @param model: torch.nn.Module
     @param criterion: torch.nn.modules.loss._Loss
-    @param set_train: tensor of mini-batches from different images
-                      shape = (mini_batch_size, 16, 16, 3)
-    @param set_gt: tensor of mini-batches from different gt images
-                      shape = (mini_batch_size, 16, 16)
+    @param set_train: tensor of training images of appropriate shape given the 
+                      model that is used
+    @param set_gt: tensor of training labels of appropriate shape given the model 
+                   that is used
     @param optimizer: torch.optim.Optimizer
-    @param num_epochs: int
+    @param num_epochs: (int) number of epochs 
+    @param testing: (default:False) boolean for testing the accuracy of the model
+    @param test_set: tensor of testing images of appropriate shape given the model
+    @param test_gts: tensor of testing labels of appropriate shape given the model
+    @param save_model: (default:False) boolean for saving the model at a given frequency
+    @param model_name: (str) name used to save the model
+    @param epoch_freq_save: (int) number of epoch between two saves of the model
     """
     
     

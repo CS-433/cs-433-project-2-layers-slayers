@@ -76,9 +76,12 @@ def load_data(num_images, rotate=False, flip=False, angles=[0,90,180,270], direc
     return img_torch, gts_torch
 
 #-----------------------------------------------------------------------------
-def load_test ():
+def load_test():
     """
     load all the test images
+    __________
+    Parameters : None
+    Returns : images (4D torch tensor) with shape (N,C,H,W)
     """
     test_dir = "data/test_set_images/"
     N = len(os.listdir(test_dir))
@@ -98,7 +101,13 @@ def load_test ():
 
 #-----------------------------------------------------------------------------
 def split_data(data, labels, ratio, seed=1):
-    """split the dataset based on the split ratio."""
+    """
+    split the dataset based on the split ratio.
+    __________
+    Parameters : data (torch Tensor), labels (torch Tensor), ratio (float)
+    Returns : training data (torch Tensor), training labels (torch Tensor)
+              testing data (torch Tensor), testing labels (torch Tensor)
+    """
     
     np.random.seed(seed)
     

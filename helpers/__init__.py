@@ -9,6 +9,7 @@ foreground_threshold = 0.25 # percentage of pixels > 1 required to assign a fore
 
 # assign a label to a patch
 def patch_to_label(patch):
+    """ Assigns a label to a patch. """
     df = np.mean(patch)
     if df > foreground_threshold:
         return 1
