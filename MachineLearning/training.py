@@ -190,7 +190,7 @@ def k_cross_train(k, model, criterion, dataset, gts, optimizer, scheduler,
     size_data_set = dataset.shape[0]
     
     if len(split_indicies)==0:
-        list_ind = partition(list(range(dataset[0].shape[0])),k)
+        list_ind = partition(list(range(dataset.shape[0])),k)
     else:
         list_ind = split_indicies
     
