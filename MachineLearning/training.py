@@ -178,7 +178,7 @@ def separate_train_test(list_ind,i,data,labels):
 
 def k_cross_train(k, model, criterion, dataset, gts, optimizer, scheduler,
                   num_epochs_list, device, batch_size=1, split_indicies=[],
-                  save_model = False, model_name = 'model', epoch_freq_save = 5):
+                  save_model = False, name = 'model', epoch_freq_save = 5):
     """
     Train the model with k-fold cross validation. Returns a track of the
     accurcies and F1 scores, for each training.
@@ -200,7 +200,7 @@ def k_cross_train(k, model, criterion, dataset, gts, optimizer, scheduler,
     
     for i in range(k):
         print("Fold: {} out of {}".format(i+1,k))
-        model_name = f'UNet_{size_data_set}_{num_epochs_list[i]}_k{i}'
+        model_name = name + f'_k{i}'
         
         train_imgs, train_gts, test_imgs, test_gts = separate_train_test(list_ind,i,dataset,gts)
         
