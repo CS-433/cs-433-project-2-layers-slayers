@@ -14,6 +14,8 @@ import pickle
 import itertools
 import matplotlib.pyplot as plt
 
+import Imaging
+
 # ____________________________ Get prediction ________________________________
 def get_prediction(output, mask, w=16, h=16, threshold=0.25):
     """
@@ -156,7 +158,7 @@ def sub_lists(my_list):
 
 
 
-def best_combination_of_models(models_list, list_model_names, data, labels, device, validation_type = 'F1'):
+def best_combination_of_models(models_list, list_model_names, list_filters, list_type_UNet, data, labels, device, validation_type = 'F1', printage = True, print_frequency = 50):
     """ Returns the combination of models yielding the highest validation on
         the training set (see predict_with_models)
         __________
@@ -166,7 +168,7 @@ def best_combination_of_models(models_list, list_model_names, data, labels, devi
             data : validation set
             labels : groundtruths of validation set
             validation_type : a validation method (F1 or accuracy)
-            printage : print or not, the current model being evaluated
+            printage : print or not modulo 100
     """
     validation_best = 0
     sensitivity_best = 0
@@ -180,21 +182,31 @@ def best_combination_of_models(models_list, list_model_names, data, labels, devi
     for combination in mod_combinations: #loop over all the possible combinations of models
         print(combination)        
         
-        prediction_sum = 0
+        prediction_sum = torch.empty(0, dtype=torch.int64).to(device)
         for j in range(data.shape[0]): #mini batch the data, not to explose RAM
-            batch_x = data[j:j+1]
-            batch_y = labels[j:j+1]
-            batch_x = batch_x.to(device)
-            
+            if printage:
+                if (j+1)%print_frequency == 0:
+                    print(j+1)
+            prediction_sum_batch = 0  
             for i in combination:
+                batch_x = data[j:j+1]
+                if len(list_filters[i]) > 0:
+                    if list_type_UNet[i] == '3D':
+                        batch_x = Imaging.features.add_features(batch_x, list_filters[i], False)
+                    else:
+                        batch_x = Imaging.features.cat_features (batch_x, list_filters[i], False)
+                batch_x = batch_x.to(device)
+                
                 model = models_list[i]
                 with torch.no_grad():
-                    prediction_sum += sum_prediction_models(model, list_model_names[i], batch_x, False)
+                    prediction_sum_batch += sum_prediction_models(model, list_model_names[i], batch_x, False)
+            
+            prediction_sum = torch.cat((prediction_sum,prediction_sum_batch),0)
         
         names = [list_model_names[i] for i in combination]
         concatenated = [j for i in names for j in i]
         for sensitivity in range(1,len(concatenated)+1): #loop over all the possible sensitivities       
-            prediction = (prediction_sum >= sensitivity).long()
+            prediction = (prediction_sum >= sensitivity).long().to('cpu')
             acc, details = accuracy(prediction, labels)
             tp = details['tp']
             fp = details['fp']
@@ -203,6 +215,7 @@ def best_combination_of_models(models_list, list_model_names, data, labels, devi
             
             accuracies.append(acc)
             f1_scores.append(f1)
+            print("Models {} with sensitivity {} || Accuracy: {} | F1 Score : {}".format(combination,sensitivity,acc,f1))
             
             if validation_type == 'accuracy':
                 validation_meas = acc
