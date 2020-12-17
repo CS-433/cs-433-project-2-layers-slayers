@@ -35,15 +35,21 @@ learning_rate = 0.001
 model = ML.model.UNet().to(device)
 model_name = 'UNet'
 
-weights = torch.tensor([0.25,0.75]).to(device)
+c1 = labels.sum().item()
+c0 = labels.nelement() - c1
+total = labels.nelement()
+w0 = 1. - c0/total
+w1 = 1. - c1/total
+weights = torch.tensor([w0, w1]).to(device)
+
 criterion = torch.nn.CrossEntropyLoss(weight=weights)
-optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate, weight_decay=1e-8)
+optimizer = torch.optim.RMSprop(model.parameters(), lr=learning_rate, weight_decay=1e-8, momentum=0.90)
 
 scheduler = 0 #we finally did not use it
 
-ML.Training.k_cross_train(k, model, criterion, dataset, labels, optimizer, scheduler,
-                  [40,15,15,15], device, batch_size=1, split_indicies=[],
-                  save_model = True, model_name = model_name ,epoch_freq_save = 5)
+ML.Training.k_cross_train(k, model, criterion, data, labels, optimizer, scheduler,
+                  [50,50,50,50], device, batch_size=1, split_indicies=[],
+                  save_model = True, model_name = model_name ,epoch_freq_save = 1)
 
 
 
@@ -70,7 +76,7 @@ optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate, weight_decay
 
 scheduler = 0 #we finally did not use it
 
-ML.Training.k_cross_train(k, model, criterion, dataset, labels, optimizer, scheduler,
+ML.Training.k_cross_train(k, model, criterion, data, labels, optimizer, scheduler,
                   [40,15,15,15], device, batch_size=1, split_indicies=[],
                   save_model = True, model_name = model_name ,epoch_freq_save = 5)
 
@@ -97,6 +103,6 @@ optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate, weight_decay
 
 scheduler = 0 #we finally did not use it
 
-ML.Training.k_cross_train(k, model, criterion, dataset, labels, optimizer, scheduler,
+ML.Training.k_cross_train(k, model, criterion, data, labels, optimizer, scheduler,
                   [40,15,15,15], device, batch_size=1, split_indicies=[],
                   save_model = True, model_name = model_name ,epoch_freq_save = 5)
