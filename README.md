@@ -41,4 +41,4 @@ MachineLearning
 - The training sub-module contains the training functions
 
 Running the code
-- To reproduce the setup we used for our AIcrowd prediction, simply run the script *run.py*
+- To reproduce the setup we used for our AIcrowd prediction, simply run the script *run.py*. Note that to obtain our final submission, we did not exactly run that file, but did a training on several computers, on several days, eventhough running the script should produce similar results.
