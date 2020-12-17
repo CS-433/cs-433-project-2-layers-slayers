@@ -14,23 +14,23 @@ import MachineLearning as ML
 ############################################################################
 # MAIN    
 
-size_train_set = 10
+size_train_set = 100
 rotation_angles = [0,45,315]
-data, labels = Imaging.load_data(size_train_set, rotate=True, angles=rotation_angles)
+data, labels = Imaging.load_data(size_train_set)
 
-# crop_data = torch.empty(0)
-# for ind in range(data.shape[0]):
-#     crop_img = torch.stack(Imaging.crop_img(data[ind]))
-#     crop_data = torch.cat((crop_data, crop_img), 0)
+crop_data = torch.empty(0)
+for ind in range(data.shape[0]):
+    crop_img = torch.stack(Imaging.crop_img(data[ind]))
+    crop_data = torch.cat((crop_data, crop_img), 0)
     
-# crop_labels = torch.empty(0).long()
-# for ind in range(data.shape[0]):
-#     crop_img = torch.stack(Imaging.crop_img(labels[ind]))
-#     crop_labels = torch.cat((crop_labels, crop_img), 0)
+crop_labels = torch.empty(0).long()
+for ind in range(data.shape[0]):
+    crop_img = torch.stack(Imaging.crop_img(labels[ind]))
+    crop_labels = torch.cat((crop_labels, crop_img), 0)
 
 
 ratio = 0.7
-train_imgs, train_gts, test_imgs, test_gts = Imaging.split_data(data, labels, ratio)
+train_imgs, train_gts, test_imgs, test_gts = Imaging.split_data(crop_data, crop_labels, ratio)
 
 
 
@@ -42,13 +42,15 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 num_epochs = 25
 learning_rate = 0.001
 
-model_name = f'UNet_{size_train_set}_{num_epochs}'
+model_name = f'LogReg_{size_train_set}_{num_epochs}'
 filters = ['edge','edge+']
 
-model = ML.model.UNet()
+model = ML.model.LogisticRegression()
+# model.load_state_dict(torch.load('saved-models/UNet3D_250_50.pt'))
 # model = ML.model.LogisticRegression()
 criterion = torch.nn.CrossEntropyLoss()
-optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate, weight_decay=1e-8)
+optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, weight_decay=1e-8)
+# optimizer.load_state_dict(torch.load('saved-models/UNet3D_250_50_optimizer.pt'))
 scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.95)
 
 tr_acc, te_acc, te_f1 = ML.training.train(model, criterion, train_imgs, train_gts,

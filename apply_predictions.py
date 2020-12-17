@@ -23,11 +23,12 @@ print(imgs.shape)
 
 preds = torch.zeros(imgs.shape[0],imgs.shape[2],imgs.shape[3])
 
-for i in range(imgs.shape[0]):
-  out = model(imgs[i:i+1])
-  pred = ML.validation.get_prediction(out, True)
-  pred = pred.view(pred.shape[1], pred.shape[2])
-  preds[i] = pred
+with torch.no_grad():
+    for i in range(imgs.shape[0]):
+      out = model(imgs[i:i+1])
+      pred = ML.validation.get_prediction(out, True)
+      pred = pred.view(pred.shape[1], pred.shape[2])
+      preds[i] = pred
 
 ## Optionnaly save the predictions -------------------------------------------
 test_dir = "data/test_set_images/"
