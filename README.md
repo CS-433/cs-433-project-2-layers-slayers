@@ -8,6 +8,7 @@ Machine Learning (CS-433) : Project 2.
 
 ## Folders
 - data : *contains all the data used to train and test the models*
+- tutorial : *contains the two provided sample codes to start the project*
 - saved-models : *contains all the models that have been trained* 
   - (Note : As GitHub limits the size of the uploaded files, only the light-weighted models are present on the repository.)
 - Imaging, MachineLearning, helpers : *contain the internal packages used for the project : helpers, Imaging and MachineLearning*
@@ -41,4 +42,5 @@ MachineLearning
 - The training sub-module contains the training functions
 
 Running the code
-- To reproduce the setup we used for our AIcrowd prediction, simply run the script *run.py*. Note that to obtain our final submission, we did not exactly run that file, but did a training on several computers, on several days, eventhough running the script should produce similar results.
+- To reproduce the setup we used for our AIcrowd prediction, simply run the script *run.py*. 
+  - Note that to obtain our final submission, we did not exactly run that file, but did a training on several computers, on several days, eventhough running the script should produce similar results.
