@@ -129,7 +129,7 @@ def sum_prediction_models(model_type, models_filenames_list, batch_x, printage =
 
 
 
-def predict_with_models(model_type, models_filenames_list, batch_x, sensitivity = 1):
+def predict_with_models(models_list, list_model_names, list_filters, list_type_UNet, batch_x, device, sensitivity = 1):
     """ Returns a prediction given a list of models (there is a road if the
         sum of each prediction per model is above sensitivity)
         __________
@@ -139,8 +139,20 @@ def predict_with_models(model_type, models_filenames_list, batch_x, sensitivity 
             batch_x : set of images, shape : (N,C,W,H)     
             sensitivity : sensitivity of prediction
     """
-            
-    return (sum_prediction_models(model_type, models_filenames_list, batch_x) >= sensitivity).long()
+    prediction_sum_batch = 0  
+    for i in range(len(list_model_names)):
+        if len(list_filters[i]) > 0:
+            if list_type_UNet[i] == '3D':
+                batch_x = Imaging.features.add_features(batch_x, list_filters[i], False)
+            else:
+                batch_x = Imaging.features.cat_features (batch_x, list_filters[i], False)
+        batch_x = batch_x.to(device)
+                
+        model = models_list[i]
+        with torch.no_grad():
+            prediction_sum_batch += sum_prediction_models(model, list_model_names[i], batch_x, False)
+
+    return (prediction_sum_batch >= sensitivity).long()
 
 
 
